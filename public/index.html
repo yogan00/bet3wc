@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ĐỘ WC</title>
+  <meta name="description" content="Chọn team đê" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="app">
+    <main id="main-view">
+      <!-- Header -->
+      <div class="header">
+        <span class="live-badge">Live Picks</span>
+        <h1 id="app-title">⚽ ĐỘ WC</h1>
+        <p id="day-key-label" class="day-key" style="display:none">
+          Showing matches for: <span id="day-key-value"></span>
+        </p>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="loading">Loading matches…</div>
+
+      <!-- Error -->
+      <div id="error-box" class="error-box" style="display:none"></div>
+
+      <!-- Setup required -->
+      <div id="setup-box" class="setup-box" style="display:none">
+        <div class="setup-icon">🔧</div>
+        <h2>Setup Required</h2>
+        <p>Add your Google Service Account credentials and Admin IDs to the environment variables, then restart.</p>
+        <div class="setup-vars">
+          <div><span class="env-key">GOOGLE_SERVICE_ACCOUNT_JSON</span> — service account JSON</div>
+          <div><span class="env-key">ADMIN_IDS</span> — comma-separated admin IDs</div>
+        </div>
+      </div>
+
+      <!-- No matches -->
+      <div id="no-matches-box" class="card center" style="display:none">
+        <div class="big-icon">🏆</div>
+        <h2>No upcoming matches</h2>
+        <p class="muted">Check back soon for the next event.</p>
+      </div>
+
+      <!-- Matches area -->
+      <div id="matches-area" style="display:none">
+        <!-- Closed notice -->
+        <div id="closed-notice" class="card center" style="display:none">
+          <p class="yellow">⏰ Submissions are closed</p>
+          <p class="muted small">The pick window closed 3 hours before the match.</p>
+        </div>
+
+        <!-- User lookup -->
+        <div id="user-lookup" class="card" style="display:none">
+          <h2 class="section-label">Identify Yourself</h2>
+          <div class="input-row">
+            <input id="user-query" type="text" placeholder="Your # or last 4 digits of ID" autocomplete="off" />
+            <button id="find-btn" onclick="handleLookup()">Find</button>
+          </div>
+          <div id="found-user" class="found-user" style="display:none"></div>
+          <div id="lookup-error" class="field-error" style="display:none"></div>
+        </div>
+
+        <!-- Match cards -->
+        <div id="match-cards"></div>
+
+        <!-- Submit -->
+        <div id="submit-area" style="display:none">
+          <button id="submit-btn" class="submit-btn" onclick="handleSubmit()" disabled>Submit Picks</button>
+          <p id="pick-hint" class="muted small center-text">Pick a team for every match to submit</p>
+          <p id="submit-error" class="field-error center-text" style="display:none"></p>
+        </div>
+
+        <!-- Success -->
+        <div id="success-box" class="card center" style="display:none">
+          <div class="big-icon">🎉</div>
+          <h2 class="green">Picks Submitted!</h2>
+          <p class="muted">Good luck, <strong id="success-name"></strong>!</p>
+          <div id="success-picks"></div>
+          <button class="link-btn" onclick="resetAfterSubmit()">Submit for another person</button>
+        </div>
+      </div>
+
+      <!-- Admin toggle -->
+      <div id="admin-toggle" class="admin-footer">
+        <details>
+          <summary>Admin access</summary>
+          <div class="input-row mt-sm">
+            <input id="admin-input" type="password" placeholder="Admin ID" />
+            <button onclick="handleAdminLogin()">Enter</button>
+          </div>
+          <p id="admin-auth-error" class="field-error" style="display:none"></p>
+        </details>
+      </div>
+    </main>
+
+    <!-- Admin panel -->
+    <main id="admin-view" style="display:none">
+      <div class="header">
+        <div>
+          <span class="admin-badge">Admin</span>
+          <h1>Manage Matches</h1>
+        </div>
+        <button class="link-btn" onclick="closeAdmin()">← Back to picks</button>
+      </div>
+
+      <div id="admin-loading" class="loading">Loading…</div>
+
+      <div id="admin-content" style="display:none">
+        <p class="muted small">
+          Date/time example: <code class="yellow-code">12/06/2026 2am</code>. Winner field: leave blank until the match is over.
+        </p>
+
+        <div id="admin-matches"></div>
+
+        <button class="add-match-btn" onclick="addMatch()">+ Add Match</button>
+
+        <button class="save-btn" onclick="handleSave()" id="save-btn">Save Match Schedule</button>
+
+        <div class="score-section">
+          <p class="muted small">After setting winners above and saving, click below to update everyone's Won/Lost score in the Result sheet.</p>
+          <button class="recalc-btn" onclick="handleRecalculate()" id="recalc-btn">🏆 Recalculate Scores</button>
+        </div>
+
+        <p id="admin-error" class="field-error center-text" style="display:none"></p>
+        <p id="admin-success" class="success-text center-text" style="display:none"></p>
+      </div>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
