@@ -29,7 +29,6 @@ async function computeAndWriteScores() {
   ]);
 
   const decided = matches.filter((m) => m.winner && m.winner.trim() !== "");
-  if (decided.length === 0) return;
   if (betPickData.length < 2) return;
 
   const header = betPickData[0];
@@ -50,7 +49,6 @@ async function computeAndWriteScores() {
       const colIdx = matchColMap.get(match.dateTime);
       if (colIdx === undefined) continue;
       const pick = (row[colIdx] || "").trim();
-      if (!pick || pick === "-") continue;
       if (pick === match.winner) won++;
       else lost++;
     }
