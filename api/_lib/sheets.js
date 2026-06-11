@@ -59,15 +59,16 @@ async function getMatches() {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: DATABASE_SHEET_ID,
-    range: `${DB_MATCHES_SHEET}!A1:ZZ4`,
+    range: `${DB_MATCHES_SHEET}!A1:ZZ5`,
   });
   const rows = res.data.values || [];
   if (rows.length < 3) return [];
 
-  const dtRow = rows[0] || [];
-  const t1Row = rows[1] || [];
-  const t2Row = rows[2] || [];
-  const wRow  = rows[3] || [];
+  const dtRow   = rows[0] || [];
+  const t1Row   = rows[1] || [];
+  const t2Row   = rows[2] || [];
+  const wRow    = rows[3] || [];
+  const typeRow = rows[4] || [];
 
   const matches = [];
   for (let i = 1; i < dtRow.length; i++) {
@@ -79,7 +80,8 @@ async function getMatches() {
         dateTime: String(dateTime),
         team1:    String(team1),
         team2:    String(team2),
-        winner:   wRow[i] ? String(wRow[i]) : undefined,
+        winner:   wRow[i]    ? String(wRow[i])    : undefined,
+        type:     typeRow[i] ? String(typeRow[i]) : undefined,
       });
     }
   }
@@ -88,20 +90,21 @@ async function getMatches() {
 
 async function setMatches(matches) {
   const sheets = getSheetsClient();
-  const dtRow = ["Day & time", ...matches.map((m) => m.dateTime)];
-  const t1Row = ["Team 1",     ...matches.map((m) => m.team1)];
-  const t2Row = ["Team 2",     ...matches.map((m) => m.team2)];
-  const wRow  = ["Winner",     ...matches.map((m) => m.winner || "")];
+  const dtRow   = ["Day & time", ...matches.map((m) => m.dateTime)];
+  const t1Row   = ["Team 1",     ...matches.map((m) => m.team1)];
+  const t2Row   = ["Team 2",     ...matches.map((m) => m.team2)];
+  const wRow    = ["Winner",     ...matches.map((m) => m.winner || "")];
+  const typeRow = ["Type",       ...matches.map((m) => m.type || "")];
 
   await sheets.spreadsheets.values.clear({
     spreadsheetId: DATABASE_SHEET_ID,
-    range: `${DB_MATCHES_SHEET}!A1:ZZ4`,
+    range: `${DB_MATCHES_SHEET}!A1:ZZ5`,
   });
   await sheets.spreadsheets.values.update({
     spreadsheetId: DATABASE_SHEET_ID,
     range: `${DB_MATCHES_SHEET}!A1`,
     valueInputOption: "USER_ENTERED",
-    requestBody: { values: [dtRow, t1Row, t2Row, wRow] },
+    requestBody: { values: [dtRow, t1Row, t2Row, wRow, typeRow] },
   });
 }
 

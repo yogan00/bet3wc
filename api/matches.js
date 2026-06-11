@@ -6,7 +6,8 @@ module.exports = async function handler(req, res) {
 
   try {
     const matches = await getMatches();
-    const dayKey = getNearestMatchDay(matches);
+    const dayParam = (req.query.day || "").trim();
+    const dayKey = dayParam || getNearestMatchDay(matches);
 
     if (!dayKey) {
       return res.json({ matches: [], dayKey: null, allClosed: true });

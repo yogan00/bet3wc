@@ -76,10 +76,21 @@ function getMatchesForDay(matches, dayKey) {
   });
 }
 
+function getAllMatchDays(matches) {
+  const seen = new Set();
+  for (const m of matches) {
+    const d = parseMatchDate(m.dateTime);
+    if (!d) continue;
+    seen.add(getDateKey(d));
+  }
+  return Array.from(seen).sort();
+}
+
 module.exports = {
   parseMatchDate,
   isCutoffPassed,
   getDateKey,
   getNearestMatchDay,
   getMatchesForDay,
+  getAllMatchDays,
 };

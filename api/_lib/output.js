@@ -1,4 +1,5 @@
 const { getMatches, readBetPickSheet, writePick, writeUserScores } = require("./sheets");
+const { TYPE_POINTS, DEFAULT_POINTS } = require("./config");
 
 async function submitPick(userId, matchDateTime, teamPick) {
   const data = await readBetPickSheet();
@@ -29,7 +30,7 @@ async function computeAndWriteScores() {
   ]);
 
   const decided = matches.filter((m) => m.winner && m.winner.trim() !== "");
-  if (betPickData.length < 2) return;
+  if (decided.length === 0 || betPickData.length < 2) return;
 
   const header = betPickData[0];
   const matchColMap = new Map();
@@ -49,8 +50,13 @@ async function computeAndWriteScores() {
       const colIdx = matchColMap.get(match.dateTime);
       if (colIdx === undefined) continue;
       const pick = (row[colIdx] || "").trim();
-      if (pick === match.winner) won++;
-      else lost++;
+      if (!pick || pick === "-") continue;
+
+      const type = (match.type || "").trim().toLowerCase();
+      const points = TYPE_POINTS[type] !== undefined ? TYPE_POINTS[type] : DEFAULT_POINTS;
+
+      if (pick === match.winner) won += points;
+      else lost += points;
     }
     scores.push({ rowIdx, won, lost });
   }

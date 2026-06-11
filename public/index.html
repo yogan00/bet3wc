@@ -14,9 +14,33 @@
       <div class="header">
         <span class="live-badge">Live Picks</span>
         <h1 id="app-title">⚽ ĐỘ WC</h1>
-        <p id="day-key-label" class="day-key" style="display:none">
-          Showing matches for: <span id="day-key-value"></span>
-        </p>
+
+        <div id="sheet-link-wrap" style="display:none">
+          <a id="sheet-link" href="#" target="_blank" rel="noopener noreferrer" class="sheet-link">
+            📊 View results &amp; picks
+          </a>
+        </div>
+
+        <!-- Date picker trigger -->
+        <div id="date-trigger-wrap" style="display:none" class="date-trigger-wrap">
+          <button id="date-trigger-btn" class="date-trigger-btn" onclick="toggleCalendar()">
+            <span>📅</span>
+            <span id="date-trigger-label" class="date-trigger-label"></span>
+            <span id="date-trigger-arrow" class="date-trigger-arrow">▼</span>
+          </button>
+          <!-- Calendar popup -->
+          <div id="calendar-popup" class="calendar-popup" style="display:none">
+            <div class="cal-header">
+              <button class="cal-nav" onclick="calPrevMonth()">‹</button>
+              <span id="cal-month-label" class="cal-month-label"></span>
+              <button class="cal-nav" onclick="calNextMonth()">›</button>
+            </div>
+            <div class="cal-dow-row">
+              <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+            </div>
+            <div id="cal-grid" class="cal-grid"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -45,13 +69,11 @@
 
       <!-- Matches area -->
       <div id="matches-area" style="display:none">
-        <!-- Closed notice -->
         <div id="closed-notice" class="card center" style="display:none">
           <p class="yellow">⏰ Submissions are closed</p>
           <p class="muted small">The pick window closed 3 hours before the match.</p>
         </div>
 
-        <!-- User lookup -->
         <div id="user-lookup" class="card" style="display:none">
           <h2 class="section-label">Identify Yourself</h2>
           <div class="input-row">
@@ -62,17 +84,14 @@
           <div id="lookup-error" class="field-error" style="display:none"></div>
         </div>
 
-        <!-- Match cards -->
         <div id="match-cards"></div>
 
-        <!-- Submit -->
         <div id="submit-area" style="display:none">
           <button id="submit-btn" class="submit-btn" onclick="handleSubmit()" disabled>Submit Picks</button>
           <p id="pick-hint" class="muted small center-text">Pick a team for every match to submit</p>
           <p id="submit-error" class="field-error center-text" style="display:none"></p>
         </div>
 
-        <!-- Success -->
         <div id="success-box" class="card center" style="display:none">
           <div class="big-icon">🎉</div>
           <h2 class="green">Picks Submitted!</h2>
@@ -113,9 +132,7 @@
         </p>
 
         <div id="admin-matches"></div>
-
         <button class="add-match-btn" onclick="addMatch()">+ Add Match</button>
-
         <button class="save-btn" onclick="handleSave()" id="save-btn">Save Match Schedule</button>
 
         <div class="score-section">
