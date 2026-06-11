@@ -367,8 +367,8 @@ function handleAdminLogin() {
     .catch(function () { showFieldError('admin-auth-error', 'Login failed.'); });
 }
 
-function openAdmin() { hide('main-view'); show('admin-view'); loadAdminMatches(); }
-function closeAdmin() { show('main-view'); hide('admin-view'); state.adminId = null; document.getElementById('admin-input').value = ''; }
+function openAdmin() { hide('main-view'); show('admin-view'); show('scroll-end-btn'); loadAdminMatches(); }
+function closeAdmin() { show('main-view'); hide('admin-view'); hide('scroll-end-btn'); state.adminId = null; document.getElementById('admin-input').value = ''; }
 
 function loadAdminMatches() {
   show('admin-loading'); hide('admin-content');
@@ -405,23 +405,53 @@ function buildTypeSelect(idx, currentType) {
   return '<select class="type-select" onchange="updateMatch(' + idx + ', \'type\', this.value)">' + opts + '</select>';
 }
 
+function parseAdminDate(str) {
+  if (!str || !str.trim()) return null;
+  var s = str.trim();
+  // Try ISO first
+  var d = new Date(s);
+  if (!isNaN(d)) return d;
+  // Handle "dd/MM/yyyy h:mma" or "dd/MM/yyyy HH:mm" style
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  if (m) {
+    var day = +m[1], mon = +m[2], yr = +m[3], hr = +m[4], min = +(m[5] || 0), ampm = (m[6] || '').toLowerCase();
+    if (ampm === 'pm' && hr < 12) hr += 12;
+    if (ampm === 'am' && hr === 12) hr = 0;
+    return new Date(yr, mon - 1, day, hr, min);
+  }
+  return null;
+}
+
+function isAdminMatchPast(dateTimeStr) {
+  var d = parseAdminDate(dateTimeStr);
+  if (!d) return false;
+  return new Date() > d;
+}
+
 function buildAdminMatchCard(match, idx) {
   var card = document.createElement('div');
-  card.className = 'admin-match-card'; card.id = 'admin-match-' + idx;
+  var past = isAdminMatchPast(match.dateTime);
+  card.className = 'admin-match-card' + (past ? ' admin-match-card--past' : '');
+  card.id = 'admin-match-' + idx;
   var hasWinner = match.winner && match.winner.trim();
+  var lockedAttr = past ? ' disabled' : '';
   card.innerHTML =
-    '<div class="admin-match-header"><span class="admin-match-label">Match ' + (idx + 1) + '</span>' +
+    '<div class="admin-match-header"><span class="admin-match-label">Match ' + (idx + 1) + (past ? ' <span class="past-badge">PAST</span>' : '') + '</span>' +
     '<button class="remove-btn" onclick="removeMatch(' + idx + ')">Remove</button></div>' +
-    '<input type="text" placeholder="Date &amp; Time (e.g. 12/06/2026 2am)" value="' + escAttr(match.dateTime) + '" oninput="updateMatch(' + idx + ', \'dateTime\', this.value)" />' +
+    '<input type="text" placeholder="Date &amp; Time (e.g. 12/06/2026 2am)" value="' + escAttr(match.dateTime) + '" oninput="updateMatch(' + idx + ', \'dateTime\', this.value)"' + lockedAttr + ' />' +
     '<div class="two-col">' +
-    '<input type="text" placeholder="Team 1" value="' + escAttr(match.team1) + '" oninput="updateMatch(' + idx + ', \'team1\', this.value)" />' +
-    '<input type="text" placeholder="Team 2" value="' + escAttr(match.team2) + '" oninput="updateMatch(' + idx + ', \'team2\', this.value)" /></div>' +
+    '<input type="text" placeholder="Team 1" value="' + escAttr(match.team1) + '" oninput="updateMatch(' + idx + ', \'team1\', this.value)"' + lockedAttr + ' />' +
+    '<input type="text" placeholder="Team 2" value="' + escAttr(match.team2) + '" oninput="updateMatch(' + idx + ', \'team2\', this.value)"' + lockedAttr + ' /></div>' +
     '<div class="two-col">' +
     '<div class="winner-row"><input type="text" placeholder="Winner (blank if not played yet)" value="' + escAttr(match.winner || '') + '" oninput="updateMatch(' + idx + ', \'winner\', this.value)" />' +
     (hasWinner ? '<span class="winner-set-badge">✓</span>' : '') + '</div>' +
     buildTypeSelect(idx, match.type) +
     '</div>';
   return card;
+}
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 
 function addMatch() { state.adminMatches.push({ dateTime: '', team1: '', team2: '', winner: '', type: '' }); renderAdminMatches(); }

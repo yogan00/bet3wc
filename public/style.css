@@ -80,6 +80,8 @@ h1 {
 }
 
 /* ── Sheet link ─────────────────────────────────────────────────────────────── */
+#sheet-link-wrap { text-align: center; }
+
 .sheet-link {
   display: inline-flex;
   align-items: center;
@@ -379,6 +381,52 @@ button { cursor: pointer; font-family: inherit; border: none; border-radius: var
 }
 .type-select:focus { border-color: var(--yellow); }
 .type-select option { background: #1a1a26; color: var(--fg); }
+
+.admin-match-card--past {
+  opacity: 0.45;
+  background: #0d0d14;
+  border-color: #1e1e2a;
+}
+.admin-match-card--past input:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  background: #0d0d14;
+  border-color: #1e1e2a;
+}
+.past-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  background: #1a1a26;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.scroll-end-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 100;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, transform .15s;
+}
+.scroll-end-btn:hover { background: #1d4ed8; transform: translateY(2px); }
 
 .add-match-btn { width: 100%; border: 2px dashed var(--border); background: none; color: var(--muted); padding: 16px; border-radius: 18px; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
 .add-match-btn:hover { border-color: var(--yellow); color: var(--yellow); }
