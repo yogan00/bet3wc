@@ -34,7 +34,12 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  delete require.cache[require.resolve(handlerPath)];
+  const projectRoot = __dirname + path.sep;
+  Object.keys(require.cache).forEach((key) => {
+    if (key.startsWith(projectRoot) && !key.includes("node_modules")) {
+      delete require.cache[key];
+    }
+  });
   const handler = require(handlerPath);
 
   req.query = query || {};

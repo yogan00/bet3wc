@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
     const result = dayMatches.map((m) => {
       const date = parseMatchDate(m.dateTime);
       const closed = date ? isCutoffPassed(date) : true;
-      return { dateTime: m.dateTime, team1: m.team1, team2: m.team2, closed };
+      return { dateTime: m.dateTime, team1: m.team1, team2: m.team2, closed, handicap: m.handicap || "" };
     });
 
     res.json({ matches: result, dayKey });

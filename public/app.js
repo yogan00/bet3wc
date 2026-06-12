@@ -238,6 +238,17 @@ function renderMatches() {
   }
 }
 
+function handicapLine(match) {
+  var raw = (match.handicap || '').trim();
+  if (!raw) return '';
+  var h = parseFloat(raw);
+  if (isNaN(h) || h === 0) return '';
+  var team = h > 0 ? match.team1 : match.team2;
+  var val = Math.abs(h);
+  var valStr = val % 1 === 0 ? String(val) : String(val);
+  return '<div class="match-handicap">' + escHtml(team) + ' chấp ' + escHtml(valStr) + '</div>';
+}
+
 function renderMatchCards(openMatches) {
   var container = document.getElementById('match-cards');
   container.innerHTML = '';
@@ -246,6 +257,7 @@ function renderMatchCards(openMatches) {
     card.className = 'match-card';
     card.innerHTML =
       '<div class="match-time">' + escHtml(match.dateTime) + '</div>' +
+      handicapLine(match) +
       '<div class="team-grid">' +
         renderTeamBtn(match, match.team1) +
         renderTeamBtn(match, match.team2) +
@@ -438,7 +450,9 @@ function buildAdminMatchCard(match, idx) {
   card.innerHTML =
     '<div class="admin-match-header"><span class="admin-match-label">Match ' + (idx + 1) + (past ? ' <span class="past-badge">PAST</span>' : '') + '</span>' +
     '<button class="remove-btn" onclick="removeMatch(' + idx + ')">Remove</button></div>' +
+    '<div class="two-col">' +
     '<input type="text" placeholder="Date &amp; Time (e.g. 12/06/2026 2am)" value="' + escAttr(match.dateTime) + '" oninput="updateMatch(' + idx + ', \'dateTime\', this.value)"' + lockedAttr + ' />' +
+    '<input type="text" placeholder="Kèo (e.g. 0.5, -1)" value="' + escAttr(match.handicap || '') + '" oninput="updateMatch(' + idx + ', \'handicap\', this.value)"' + lockedAttr + ' /></div>' +
     '<div class="two-col">' +
     '<input type="text" placeholder="Team 1" value="' + escAttr(match.team1) + '" oninput="updateMatch(' + idx + ', \'team1\', this.value)"' + lockedAttr + ' />' +
     '<input type="text" placeholder="Team 2" value="' + escAttr(match.team2) + '" oninput="updateMatch(' + idx + ', \'team2\', this.value)"' + lockedAttr + ' /></div>' +
@@ -454,7 +468,7 @@ function scrollToBottom() {
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 
-function addMatch() { state.adminMatches.push({ dateTime: '', team1: '', team2: '', winner: '', type: '' }); renderAdminMatches(); }
+function addMatch() { state.adminMatches.push({ dateTime: '', team1: '', team2: '', winner: '', type: '', handicap: '' }); renderAdminMatches(); }
 function removeMatch(idx) { state.adminMatches.splice(idx, 1); renderAdminMatches(); }
 
 function updateMatch(idx, field, value) {
