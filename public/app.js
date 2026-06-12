@@ -495,9 +495,9 @@ function handleRecalculate() {
   fetch('/api/admin/score', { method: 'POST', headers: { 'x-admin-id': state.adminId } })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      btn.disabled = false; btn.textContent = '🏆 Recalculate Scores';
-      if (data.success) showAdminMsg('success', 'Scores recalculated!');
-      else showAdminMsg('error', data.error || 'Score update failed');
+      btn.disabled = false; btn.textContent = '🏆 Tính tiền';
+      if (data.success) showAdminMsg('success', 'Đã tính tiền!');
+      else showAdminMsg('error', data.error || 'Tính tiền lỗi, liên hệ Tuấn mập');
     })
     .catch(function () { btn.disabled = false; btn.textContent = '🏆 Recalculate Scores'; showAdminMsg('error', 'Failed.'); });
 }
