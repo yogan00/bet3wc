@@ -250,7 +250,7 @@ function renderMatchCards(openMatches) {
         renderTeamBtn(match, match.team1) +
         renderTeamBtn(match, match.team2) +
       '</div>' +
-      (!state.foundUser ? '<p class="pick-hint">Identify yourself above to pick a team</p>' : '');
+      (!state.foundUser ? '<p class="pick-hint">Điền thông tin trước khi bắt kèo</p>' : '');
     container.appendChild(card);
   });
 }
