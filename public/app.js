@@ -278,7 +278,7 @@ function updateSubmitBtn(openMatches) {
   var btn = document.getElementById('submit-btn');
   var count = Object.keys(state.picks).length;
   btn.disabled = !allPicked;
-  btn.textContent = 'Submit Picks' + (openMatches.length > 1 ? ' (' + count + '/' + openMatches.length + ')' : '');
+  btn.textContent = 'Chốt đơn' + (openMatches.length > 1 ? ' (' + count + '/' + openMatches.length + ')' : '');
   document.getElementById('pick-hint').style.display = allPicked ? 'none' : '';
 }
 
@@ -326,7 +326,7 @@ function handlePickTeam(matchDateTime, team) {
 function handleSubmit() {
   if (!state.foundUser) return;
   var btn = document.getElementById('submit-btn');
-  btn.disabled = true; btn.textContent = 'Submitting…';
+  btn.disabled = true; btn.textContent = 'Đang chốt đơn…';
   hide('submit-error');
 
   fetch('/api/picks', {
@@ -337,14 +337,14 @@ function handleSubmit() {
     .then(function (r) { return r.json(); })
     .then(function (data) {
       btn.disabled = false;
-      btn.textContent = 'Submit Picks';
+      btn.textContent = 'Chốt đơn';
       var openMatches = state.matches.filter(function (m) { return !m.closed; });
       if (data.success) { state.submitted = true; renderMatches(); }
       else { showFieldError('submit-error', data.error || 'Submission failed'); updateSubmitBtn(openMatches); }
     })
     .catch(function () {
-      btn.disabled = false; btn.textContent = 'Submit Picks';
-      showFieldError('submit-error', 'Submission failed. Please try again.');
+      btn.disabled = false; btn.textContent = 'Chốt đơn';
+      showFieldError('Chốt lỗi', 'Đơn chưa chốt, kèo chưa vô, vui lòng thử lại');
     });
 }
 
@@ -465,7 +465,7 @@ function updateMatch(idx, field, value) {
       var badge = card.querySelector('.winner-set-badge');
       var row = card.querySelector('.winner-row');
       if (value.trim()) {
-        if (!badge) { var b = document.createElement('span'); b.className = 'winner-set-badge'; b.textContent = '✓ Winner set'; row.appendChild(b); }
+        if (!badge) { var b = document.createElement('span'); b.className = 'winner-set-badge'; b.textContent = '✓ Đã chọn đội thắng kèo'; row.appendChild(b); }
       } else { if (badge) badge.remove(); }
     }
   }
@@ -473,7 +473,7 @@ function updateMatch(idx, field, value) {
 
 function handleSave() {
   var btn = document.getElementById('save-btn');
-  btn.disabled = true; btn.textContent = 'Saving…'; clearAdminMsgs();
+  btn.disabled = true; btn.textContent = 'Đang lưu…'; clearAdminMsgs();
   var cleaned = state.adminMatches.filter(function (m) { return m.dateTime.trim() && m.team1.trim() && m.team2.trim(); });
   fetch('/api/admin/matches', {
     method: 'PUT',
@@ -482,11 +482,11 @@ function handleSave() {
   })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      btn.disabled = false; btn.textContent = 'Save Match Schedule';
+      btn.disabled = false; btn.textContent = 'Lưu lịch thi đấu';
       if (data.success) { state.adminMatches = cleaned; renderAdminMatches(); showAdminMsg('success', 'Match schedule saved!'); }
       else showAdminMsg('error', data.error || 'Save failed');
     })
-    .catch(function () { btn.disabled = false; btn.textContent = 'Save Match Schedule'; showAdminMsg('error', 'Save failed.'); });
+    .catch(function () { btn.disabled = false; btn.textContent = 'Lưu lịch thi đấu'; showAdminMsg('error', 'Save failed.'); });
 }
 
 function handleRecalculate() {
@@ -499,7 +499,7 @@ function handleRecalculate() {
       if (data.success) showAdminMsg('success', 'Đã tính tiền!');
       else showAdminMsg('error', data.error || 'Tính tiền lỗi, liên hệ Tuấn mập');
     })
-    .catch(function () { btn.disabled = false; btn.textContent = '🏆 Recalculate Scores'; showAdminMsg('error', 'Failed.'); });
+    .catch(function () { btn.disabled = false; btn.textContent = '🏆 Tính tiền'; showAdminMsg('error', 'Failed.'); });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
