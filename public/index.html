@@ -70,14 +70,14 @@
       <!-- Matches area -->
       <div id="matches-area" style="display:none">
         <div id="closed-notice" class="card center" style="display:none">
-          <p class="yellow">⏰ Submissions are closed</p>
-          <p class="muted small">The pick window closed 3 hours before the match.</p>
+          <p class="yellow">⏰ Đóng kèo</p>
+          <p class="muted small">Mọi kèo đều đóng trước giờ đá là 3 tiếng.</p>
         </div>
 
         <div id="user-lookup" class="card" style="display:none">
-          <h2 class="section-label">Identify Yourself</h2>
+          <h2 class="section-label">Điền thông tin</h2>
           <div class="input-row">
-            <input id="user-query" type="text" placeholder="Your # or last 4 digits of ID" autocomplete="off" />
+            <input id="user-query" type="text" placeholder="Số thứ tự hoặc 4 số cuối ID" autocomplete="off" />
             <button id="find-btn" onclick="handleLookup()">Find</button>
           </div>
           <div id="found-user" class="found-user" style="display:none"></div>
@@ -87,17 +87,17 @@
         <div id="match-cards"></div>
 
         <div id="submit-area" style="display:none">
-          <button id="submit-btn" class="submit-btn" onclick="handleSubmit()" disabled>Submit Picks</button>
+          <button id="submit-btn" class="submit-btn" onclick="handleSubmit()" disabled>Chốt đơn</button>
           <p id="pick-hint" class="muted small center-text">Pick a team for every match to submit</p>
           <p id="submit-error" class="field-error center-text" style="display:none"></p>
         </div>
 
         <div id="success-box" class="card center" style="display:none">
           <div class="big-icon">🎉</div>
-          <h2 class="green">Picks Submitted!</h2>
-          <p class="muted">Good luck, <strong id="success-name"></strong>!</p>
+          <h2 class="green">Đã chốt đơn!</h2>
+          <p class="muted">Còn thở còn gỡ, <strong id="success-name"></strong>!</p>
           <div id="success-picks"></div>
-          <button class="link-btn" onclick="resetAfterSubmit()">Submit for another person</button>
+          <button class="link-btn" onclick="resetAfterSubmit()">Quay lại</button>
         </div>
       </div>
 
@@ -124,19 +124,19 @@
           <span class="admin-badge">Admin</span>
           <h1>Manage Matches</h1>
         </div>
-        <button class="link-btn" onclick="closeAdmin()">← Back to picks</button>
+        <button class="link-btn" onclick="closeAdmin()">← Về lại trang chủ</button>
       </div>
 
       <div id="admin-loading" class="loading">Loading…</div>
 
       <div id="admin-content" style="display:none">
         <p class="muted small">
-          Date/time example: <code class="yellow-code">12/06/2026 2am</code>. Winner field: leave blank until the match is over.
+          Date/time example: <code class="yellow-code">12/06/2026 2am</code>. Đội thắng: để trống đến khi có kết quả đá.
         </p>
 
         <div id="admin-matches"></div>
         <button class="add-match-btn" onclick="addMatch()">+ Add Match</button>
-        <button class="save-btn" onclick="handleSave()" id="save-btn">Save Match Schedule</button>
+        <button class="save-btn" onclick="handleSave()" id="save-btn">Lưu lịch đá banh mới</button>
 
         <div class="score-section">
           <p class="muted small">After setting winners above and saving, click below to update everyone's Won/Lost score in the Result sheet.</p>

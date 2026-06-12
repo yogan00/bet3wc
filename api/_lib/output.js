@@ -49,13 +49,16 @@ async function computeAndWriteScores() {
     for (const match of decided) {
       const colIdx = matchColMap.get(match.dateTime);
       if (colIdx === undefined) continue;
+      const winner = (match.winner || "").trim();
+      const isValidWinner = winner === (match.team1 || "").trim() || winner === (match.team2 || "").trim();
+      if (!isValidWinner) continue;
+
       const pick = (row[colIdx] || "").trim();
-      if (!pick || pick === "-") continue;
 
       const type = (match.type || "").trim().toLowerCase();
       const points = TYPE_POINTS[type] !== undefined ? TYPE_POINTS[type] : DEFAULT_POINTS;
 
-      if (pick === match.winner) won += points;
+      if (pick && pick !== "-" && pick === winner) won += points;
       else lost += points;
     }
     scores.push({ rowIdx, won, lost });
