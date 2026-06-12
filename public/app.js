@@ -491,7 +491,7 @@ function handleSave() {
 
 function handleRecalculate() {
   var btn = document.getElementById('recalc-btn');
-  btn.disabled = true; btn.textContent = 'Calculating…'; clearAdminMsgs();
+  btn.disabled = true; btn.textContent = 'Đang đếm tiền…'; clearAdminMsgs();
   fetch('/api/admin/score', { method: 'POST', headers: { 'x-admin-id': state.adminId } })
     .then(function (r) { return r.json(); })
     .then(function (data) {
