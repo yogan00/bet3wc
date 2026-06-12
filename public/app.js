@@ -293,7 +293,7 @@ function handleLookup() {
   fetch('/api/users?q=' + encodeURIComponent(q))
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      btn.disabled = false; btn.textContent = 'Find';
+      btn.disabled = false; btn.textContent = 'Kiểm tra';
       if (data.found) {
         state.foundUser = data.user;
         document.getElementById('found-user').innerHTML =
@@ -310,8 +310,8 @@ function handleLookup() {
       }
     })
     .catch(function () {
-      btn.disabled = false; btn.textContent = 'Find';
-      showFieldError('lookup-error', 'Error looking up user. Please try again.');
+      btn.disabled = false; btn.textContent = 'Kiểm tra';
+      showFieldError('lookup-error', 'Không có tên, vui lòng thử lại');
     });
 }
 
