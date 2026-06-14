@@ -379,8 +379,8 @@ function handleAdminLogin() {
     .catch(function () { showFieldError('admin-auth-error', 'Login failed.'); });
 }
 
-function openAdmin() { hide('main-view'); show('admin-view'); show('scroll-end-btn'); loadAdminMatches(); }
-function closeAdmin() { show('main-view'); hide('admin-view'); hide('scroll-end-btn'); state.adminId = null; document.getElementById('admin-input').value = ''; }
+function openAdmin() { hide('main-view'); show('admin-view'); show('scroll-end-btn'); show('scroll-top-btn'); loadAdminMatches(); }
+function closeAdmin() { show('main-view'); hide('admin-view'); hide('scroll-end-btn'); hide('scroll-top-btn'); state.adminId = null; document.getElementById('admin-input').value = ''; }
 
 function loadAdminMatches() {
   show('admin-loading'); hide('admin-content');
@@ -420,10 +420,7 @@ function buildTypeSelect(idx, currentType) {
 function parseAdminDate(str) {
   if (!str || !str.trim()) return null;
   var s = str.trim();
-  // Try ISO first
-  var d = new Date(s);
-  if (!isNaN(d)) return d;
-  // Handle "dd/MM/yyyy h:mma" or "dd/MM/yyyy HH:mm" style
+  // Try dd/MM/yyyy format first (sheet format) to avoid browser parsing as MM/dd
   var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
   if (m) {
     var day = +m[1], mon = +m[2], yr = +m[3], hr = +m[4], min = +(m[5] || 0), ampm = (m[6] || '').toLowerCase();
@@ -431,18 +428,22 @@ function parseAdminDate(str) {
     if (ampm === 'am' && hr === 12) hr = 0;
     return new Date(yr, mon - 1, day, hr, min);
   }
+  // Fallback for ISO strings
+  var d = new Date(s);
+  if (!isNaN(d)) return d;
   return null;
 }
 
-function isAdminMatchPast(dateTimeStr) {
-  var d = parseAdminDate(dateTimeStr);
-  if (!d) return false;
-  return new Date() > d;
+function isAdminMatchPast(match) {
+  var hasWinner = !!(match.winner && match.winner.trim());
+  var d = parseAdminDate(match.dateTime);
+  var timeOver = d ? new Date() > new Date(d.getTime() + 150 * 60 * 1000) : false;
+  return hasWinner && timeOver;
 }
 
 function buildAdminMatchCard(match, idx) {
   var card = document.createElement('div');
-  var past = isAdminMatchPast(match.dateTime);
+  var past = isAdminMatchPast(match);
   card.className = 'admin-match-card' + (past ? ' admin-match-card--past' : '');
   card.id = 'admin-match-' + idx;
   var hasWinner = match.winner && match.winner.trim();
@@ -466,6 +467,9 @@ function buildAdminMatchCard(match, idx) {
 
 function scrollToBottom() {
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function addMatch() { state.adminMatches.push({ dateTime: '', team1: '', team2: '', winner: '', type: '', handicap: '' }); renderAdminMatches(); }
