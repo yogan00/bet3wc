@@ -403,9 +403,9 @@ function renderAdminMatches() {
 
 var TYPE_OPTIONS = [
   { value: '', label: 'Type (optional)' },
-  { value: 'Vòng bảng', label: 'vòng bảng (+1 pt)' },
-  { value: '32', label: 'Round of 32 (+2 pts)' },
-  { value: '16', label: 'Round of 16 (+3 pts)' },
+  { value: 'Vòng bảng', label: 'Vòng bảng (+1 pt)' },
+  { value: '32', label: 'Vòng 32 (+2 pts)' },
+  { value: '16', label: 'Vòng 16 (+3 pts)' },
   { value: 'Tranh cúp', label: 'Tranh cúp (+4 pts)' },
 ];
 
