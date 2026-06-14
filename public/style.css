@@ -428,6 +428,8 @@ button { cursor: pointer; font-family: inherit; border: none; border-radius: var
   transition: background .15s, transform .15s;
 }
 .scroll-end-btn:hover { background: #1d4ed8; transform: translateY(2px); }
+.scroll-top-btn { bottom: auto; top: 28px; transform: none; }
+.scroll-top-btn:hover { transform: translateY(-2px); }
 
 .add-match-btn { width: 100%; border: 2px dashed var(--border); background: none; color: var(--muted); padding: 16px; border-radius: 18px; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
 .add-match-btn:hover { border-color: var(--yellow); color: var(--yellow); }
