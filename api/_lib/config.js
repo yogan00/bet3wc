@@ -19,10 +19,10 @@ const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const TYPE_POINTS = process.env.TYPE_POINTS_JSON
   ? JSON.parse(process.env.TYPE_POINTS_JSON)
   : {
-      group: 1,
+      "Vòng bảng": 1,
       "32": 2,
       "16": 3,
-      champion: 4,
+      "Tranh cúp": 4,
     };
 
 const DEFAULT_POINTS = 1;
