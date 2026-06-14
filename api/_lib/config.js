@@ -7,9 +7,9 @@ const OUTPUT_SHEET_ID =
   process.env.DATABASE_SHEET_ID ||
   "1o9AzYElTpJ4QMmnwtdlO0GnLwmxbh3rQh6PxKoXuxSg";
 
-const DB_USERS_SHEET = process.env.DB_USERS_SHEET || "Result";
-const DB_MATCHES_SHEET = process.env.DB_MATCHES_SHEET || "Scheduled match";
-const OUTPUT_SHEET = process.env.OUTPUT_SHEET || "Bet pick";
+const DB_USERS_SHEET = process.env.DB_USERS_SHEET || "Kết quả";
+const DB_MATCHES_SHEET = process.env.DB_MATCHES_SHEET || "Lịch";
+const OUTPUT_SHEET = process.env.OUTPUT_SHEET || "Chọn đội";
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
 // Point coefficients per match type.
