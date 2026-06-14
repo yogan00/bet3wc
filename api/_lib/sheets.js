@@ -83,7 +83,7 @@ async function getMatches() {
         team2:    String(team2),
         winner:   wRow[i]        ? String(wRow[i])        : undefined,
         type:     typeRow[i]     ? String(typeRow[i])     : undefined,
-        handicap: handicapRow[i] ? String(handicapRow[i]) : undefined,
+        handicap: handicapRow[i] ? String(handicapRow[i]).replace(',', '.') : undefined,
       });
     }
   }

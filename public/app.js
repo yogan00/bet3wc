@@ -239,7 +239,7 @@ function renderMatches() {
 }
 
 function handicapLine(match) {
-  var raw = (match.handicap || '').trim();
+  var raw = (match.handicap || '').trim().replace(',', '.');
   if (!raw) return '';
   var h = parseFloat(raw);
   if (isNaN(h) || h === 0) return '';
