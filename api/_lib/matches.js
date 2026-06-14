@@ -1,5 +1,6 @@
 const { toZonedTime, fromZonedTime } = require("date-fns-tz");
 const { parseISO, parse, isValid } = require("date-fns");
+const config = require("../../config");
 
 const TZ = "Asia/Bangkok";
 
@@ -44,7 +45,8 @@ function parseMatchDate(dateTimeStr) {
 }
 
 function isCutoffPassed(matchDate) {
-  const cutoff = new Date(matchDate.getTime() - 3 * 60 * 60 * 1000);
+  const minutes = typeof config.SUBMIT_CUTOFF_MINUTES === 'number' ? config.SUBMIT_CUTOFF_MINUTES : 180;
+  const cutoff = new Date(matchDate.getTime() - minutes * 60 * 1000);
   return new Date() >= cutoff;
 }
 

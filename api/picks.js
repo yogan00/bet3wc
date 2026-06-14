@@ -1,6 +1,7 @@
 const { getMatches, getUsers } = require("./_lib/sheets");
 const { parseMatchDate, isCutoffPassed } = require("./_lib/matches");
 const { submitPick } = require("./_lib/output");
+const config = require("../config");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -22,7 +23,9 @@ module.exports = async function handler(req, res) {
       if (!match) return res.status(400).json({ error: `Match "${matchDateTime}" not found` });
       const date = parseMatchDate(matchDateTime);
       if (date && isCutoffPassed(date)) {
-        return res.status(400).json({ error: `Submissions for "${matchDateTime}" are closed (3h before match)` });
+        const mins = typeof config.SUBMIT_CUTOFF_MINUTES === 'number' ? config.SUBMIT_CUTOFF_MINUTES : 180;
+        const cutoffDesc = mins >= 0 ? `${mins} min before match` : `${Math.abs(mins)} min after match starts`;
+        return res.status(400).json({ error: `Submissions for "${matchDateTime}" are closed (${cutoffDesc})` });
       }
       if (teamPick !== match.team1 && teamPick !== match.team2) {
         return res.status(400).json({ error: `Invalid team "${teamPick}" for match "${matchDateTime}"` });
