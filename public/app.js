@@ -262,7 +262,7 @@ function renderMatchCards(openMatches) {
         renderTeamBtn(match, match.team1) +
         renderTeamBtn(match, match.team2) +
       '</div>' +
-      (!state.foundUser ? '<p class="pick-hint">Điền thông tin trước khi bắt kèo</p>' : '');
+      (!state.foundUser ? '<p class="pick-hint">Điền thông tin trước khi chọn đội</p>' : '');
     container.appendChild(card);
   });
 }
@@ -403,10 +403,10 @@ function renderAdminMatches() {
 
 var TYPE_OPTIONS = [
   { value: '', label: 'Type (optional)' },
-  { value: 'group', label: 'Group (+1 pt)' },
+  { value: 'Vòng bảng', label: 'vòng bảng (+1 pt)' },
   { value: '32', label: 'Round of 32 (+2 pts)' },
   { value: '16', label: 'Round of 16 (+3 pts)' },
-  { value: 'champion', label: 'Champion (+4 pts)' },
+  { value: 'Tranh cúp', label: 'Tranh cúp (+4 pts)' },
 ];
 
 function buildTypeSelect(idx, currentType) {
