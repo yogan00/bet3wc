@@ -63,6 +63,19 @@ function fetchDaysAndConfig() {
       show('sheet-link-wrap');
     }
 
+    if (typeof configData.submitCutoffMinutes === 'number') {
+      var mins = configData.submitCutoffMinutes;
+      var desc;
+      if (mins <= 0) {
+        desc = mins === 0 ? 'Mọi kèo đều đóng đúng giờ đá.' : 'Mọi kèo đều đóng ' + Math.abs(mins) + ' phút sau khi trận bắt đầu.';
+      } else if (mins % 60 === 0) {
+        desc = 'Mọi kèo đều đóng trước giờ đá là ' + (mins / 60) + ' tiếng.';
+      } else {
+        desc = 'Mọi kèo đều đóng trước giờ đá là ' + mins + ' phút.';
+      }
+      document.getElementById('cutoff-desc').textContent = desc;
+    }
+
     updateDateTrigger();
     fetchMatches();
     setInterval(fetchMatches, 60000);
