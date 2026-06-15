@@ -1,3 +1,4 @@
 module.exports = {
   SUBMIT_CUTOFF_MINUTES: 60,
+  MATCH_LOOKAHEAD_HOURS: 24,
 };

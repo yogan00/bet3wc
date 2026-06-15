@@ -45,10 +45,22 @@ async function getUsers() {
 async function writeUserScores(scores) {
   if (scores.length === 0) return;
   const sheets = getSheetsClient();
-  const data = scores.map((s) => ({
-    range: `${DB_USERS_SHEET}!D${s.rowIdx + 1}:E${s.rowIdx + 1}`,
-    values: [[s.won, s.lost]],
-  }));
+  const data = [];
+  for (const s of scores) {
+    data.push({
+      range: `${DB_USERS_SHEET}!D${s.rowIdx + 1}:E${s.rowIdx + 1}`,
+      values: [[s.won, s.lost]],
+    });
+    const winrate = s.voteCount === 0
+      ? "n/a"
+      : s.voteCount < s.decidedCount
+        ? "không đủ trận để tính"
+        : `${(s.winCount / s.voteCount * 100).toFixed(2)}%`;
+    data.push({
+      range: `${DB_USERS_SHEET}!G${s.rowIdx + 1}`,
+      values: [[winrate]],
+    });
+  }
   await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: DATABASE_SHEET_ID,
     requestBody: { valueInputOption: "USER_ENTERED", data },

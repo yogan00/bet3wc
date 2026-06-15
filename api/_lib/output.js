@@ -38,6 +38,14 @@ async function computeAndWriteScores() {
     if (header[i]) matchColMap.set(header[i], i);
   }
 
+  let decidedCount = 0;
+  for (const match of decided) {
+    if (matchColMap.get(match.dateTime) === undefined) continue;
+    const winner = (match.winner || "").trim();
+    const isValidWinner = winner === (match.team1 || "").trim() || winner === (match.team2 || "").trim();
+    if (isValidWinner) decidedCount++;
+  }
+
   const scores = [];
   for (let rowIdx = 1; rowIdx < betPickData.length; rowIdx++) {
     const row = betPickData[rowIdx];
@@ -46,6 +54,8 @@ async function computeAndWriteScores() {
 
     let won = 0;
     let lost = 0;
+    let winCount = 0;
+    let voteCount = 0;
     for (const match of decided) {
       const colIdx = matchColMap.get(match.dateTime);
       if (colIdx === undefined) continue;
@@ -58,10 +68,16 @@ async function computeAndWriteScores() {
       const type = (match.type || "").trim().toLowerCase();
       const points = TYPE_POINTS[type] !== undefined ? TYPE_POINTS[type] : DEFAULT_POINTS;
 
-      if (pick && pick !== "-" && pick === winner) won += points;
-      else lost += points;
+      const isVote = pick && pick !== "-";
+      if (isVote) {
+        voteCount++;
+        if (pick === winner) { won += points; winCount++; }
+        else lost += points;
+      } else {
+        lost += points;
+      }
     }
-    scores.push({ rowIdx, won, lost });
+    scores.push({ rowIdx, won, lost, winCount, voteCount, decidedCount });
   }
 
   await writeUserScores(scores);

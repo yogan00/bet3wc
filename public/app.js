@@ -10,6 +10,7 @@ var state = {
   calYear: new Date().getFullYear(),
   calMonth: new Date().getMonth() + 1,
   sheetUrl: null,
+  submitCutoffMinutes: 180,
   foundUser: null,
   picks: {},
   submitted: false,
@@ -42,6 +43,19 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+function updateCutoffDesc() {
+  var mins = state.submitCutoffMinutes;
+  var desc;
+  if (mins <= 0) {
+    desc = mins === 0 ? 'Mọi kèo đều đóng đúng giờ đá.' : 'Mọi kèo đều đóng ' + Math.abs(mins) + ' phút sau khi trận bắt đầu.';
+  } else if (mins % 60 === 0) {
+    desc = 'Mọi kèo đều đóng trước giờ đá là ' + (mins / 60) + ' tiếng.';
+  } else {
+    desc = 'Mọi kèo đều đóng trước giờ đá là ' + mins + ' phút.';
+  }
+  document.getElementById('cutoff-desc').textContent = desc;
+}
+
 // ── Days + config ─────────────────────────────────────────────────────────────
 function fetchDaysAndConfig() {
   Promise.all([
@@ -54,7 +68,6 @@ function fetchDaysAndConfig() {
     if (!daysData.error) {
       state.allDays = daysData.days || [];
       state.nearestDay = daysData.nearestDay || null;
-      if (!state.selectedDay) state.selectedDay = state.nearestDay;
     }
 
     if (configData.sheetUrl) {
@@ -64,17 +77,9 @@ function fetchDaysAndConfig() {
     }
 
     if (typeof configData.submitCutoffMinutes === 'number') {
-      var mins = configData.submitCutoffMinutes;
-      var desc;
-      if (mins <= 0) {
-        desc = mins === 0 ? 'Mọi kèo đều đóng đúng giờ đá.' : 'Mọi kèo đều đóng ' + Math.abs(mins) + ' phút sau khi trận bắt đầu.';
-      } else if (mins % 60 === 0) {
-        desc = 'Mọi kèo đều đóng trước giờ đá là ' + (mins / 60) + ' tiếng.';
-      } else {
-        desc = 'Mọi kèo đều đóng trước giờ đá là ' + mins + ' phút.';
-      }
-      document.getElementById('cutoff-desc').textContent = desc;
+      state.submitCutoffMinutes = configData.submitCutoffMinutes;
     }
+    updateCutoffDesc();
 
     updateDateTrigger();
     fetchMatches();
@@ -87,10 +92,12 @@ function fetchDaysAndConfig() {
 
 // ── Date trigger ──────────────────────────────────────────────────────────────
 function updateDateTrigger() {
-  var activeDay = state.selectedDay || state.nearestDay;
-  if (!activeDay) { hide('date-trigger-wrap'); return; }
   show('date-trigger-wrap');
-  setText('date-trigger-label', formatDayLabel(activeDay));
+  if (state.selectedDay) {
+    setText('date-trigger-label', formatDayLabel(state.selectedDay));
+  } else {
+    setText('date-trigger-label', 'Sắp diễn ra');
+  }
 }
 
 function toggleCalendar() {
@@ -98,9 +105,9 @@ function toggleCalendar() {
 }
 
 function openCalendar() {
-  var activeDay = state.selectedDay || state.nearestDay;
-  if (activeDay) {
-    var parts = activeDay.split('-');
+  var refDay = state.selectedDay || state.nearestDay;
+  if (refDay) {
+    var parts = refDay.split('-');
     state.calYear = Number(parts[0]);
     state.calMonth = Number(parts[1]);
   }
@@ -135,7 +142,7 @@ function renderCalendar() {
 
   var daysInMonth = new Date(y, m, 0).getDate();
   var startDow = new Date(y, m - 1, 1).getDay();
-  var activeDay = state.selectedDay || state.nearestDay;
+  var activeDay = state.selectedDay;
 
   var grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
@@ -178,6 +185,16 @@ function formatDayLabel(key) {
   var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate();
+}
+
+function resetToDefault() {
+  state.selectedDay = null;
+  state.submitted = false;
+  state.foundUser = null;
+  state.picks = {};
+  closeCalendar();
+  updateDateTrigger();
+  fetchMatches();
 }
 
 function switchDay(day) {
@@ -230,7 +247,7 @@ function renderMatches() {
 
   show('matches-area');
 
-  if (closedMatches.length > 0 && openMatches.length === 0) show('closed-notice');
+  if (closedMatches.length > 0 && openMatches.length === 0) { updateCutoffDesc(); show('closed-notice'); }
   else hide('closed-notice');
 
   if (openMatches.length > 0 && !state.submitted) {
@@ -299,12 +316,12 @@ function renderSuccess(openMatches) {
 }
 
 function updateSubmitBtn(openMatches) {
-  var allPicked = openMatches.length > 0 && openMatches.every(function (m) { return state.picks[m.dateTime]; });
-  var btn = document.getElementById('submit-btn');
   var count = Object.keys(state.picks).length;
-  btn.disabled = !allPicked;
+  var anyPicked = count > 0;
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = !anyPicked;
   btn.textContent = 'Chốt đơn' + (openMatches.length > 1 ? ' (' + count + '/' + openMatches.length + ')' : '');
-  document.getElementById('pick-hint').style.display = allPicked ? 'none' : '';
+  document.getElementById('pick-hint').style.display = anyPicked ? 'none' : '';
 }
 
 // ── User lookup ───────────────────────────────────────────────────────────────

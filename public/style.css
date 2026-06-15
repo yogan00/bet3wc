@@ -204,6 +204,10 @@ h1 {
   cursor: pointer;
 }
 
+.cal-footer { padding: 8px 4px 2px; text-align: center; }
+.cal-today-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 5px 16px; font-size: 12px; cursor: pointer; width: 100%; }
+.cal-today-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+
 .cal-no-match {
   color: #374151;
   cursor: default;

@@ -1,5 +1,5 @@
 const { getMatches } = require("./_lib/sheets");
-const { getNearestMatchDay, getMatchesForDay, parseMatchDate, isCutoffPassed } = require("./_lib/matches");
+const { getNearestMatchDay, getMatchesForDay, getMatchesInLookahead, getDateKey, parseMatchDate, isCutoffPassed } = require("./_lib/matches");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
@@ -7,13 +7,22 @@ module.exports = async function handler(req, res) {
   try {
     const matches = await getMatches();
     const dayParam = (req.query.day || "").trim();
-    const dayKey = dayParam || getNearestMatchDay(matches);
 
-    if (!dayKey) {
+    let dayMatches, dayKey;
+    if (dayParam) {
+      dayKey = dayParam;
+      dayMatches = getMatchesForDay(matches, dayKey);
+    } else {
+      dayMatches = getMatchesInLookahead(matches);
+      dayKey = dayMatches.length > 0
+        ? getDateKey(parseMatchDate(dayMatches[0].dateTime))
+        : getNearestMatchDay(matches);
+    }
+
+    if (!dayKey && dayMatches.length === 0) {
       return res.json({ matches: [], dayKey: null, allClosed: true });
     }
 
-    const dayMatches = getMatchesForDay(matches, dayKey);
     const result = dayMatches.map((m) => {
       const date = parseMatchDate(m.dateTime);
       const closed = date ? isCutoffPassed(date) : true;

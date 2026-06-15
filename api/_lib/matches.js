@@ -88,6 +88,16 @@ function getAllMatchDays(matches) {
   return Array.from(seen).sort();
 }
 
+function getMatchesInLookahead(matches) {
+  const hours = typeof config.MATCH_LOOKAHEAD_HOURS === 'number' ? config.MATCH_LOOKAHEAD_HOURS : 24;
+  const horizon = new Date(Date.now() + hours * 60 * 60 * 1000);
+  return matches.filter((m) => {
+    const d = parseMatchDate(m.dateTime);
+    if (!d) return false;
+    return !isCutoffPassed(d) && d <= horizon;
+  });
+}
+
 module.exports = {
   parseMatchDate,
   isCutoffPassed,
@@ -95,4 +105,5 @@ module.exports = {
   getNearestMatchDay,
   getMatchesForDay,
   getAllMatchDays,
+  getMatchesInLookahead,
 };
