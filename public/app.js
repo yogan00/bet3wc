@@ -309,9 +309,12 @@ function renderMatchCards(openMatches) {
 
 function renderTeamBtn(match, team) {
   var selected = state.picks[match.dateTime] === team;
-  var disabled = !state.foundUser ? 'disabled' : '';
+  var existingPick = state.existingPicks[match.dateTime];
+  var locked = !!existingPick;
+  var disabled = (!state.foundUser || locked) ? 'disabled' : '';
   var selClass = selected ? ' selected' : '';
-  return '<button class="team-btn' + selClass + '" ' + disabled +
+  var lockedClass = locked ? ' locked' : '';
+  return '<button class="team-btn' + selClass + lockedClass + '" ' + disabled +
     ' onclick="handlePickTeam(\'' + escAttr(match.dateTime) + '\', \'' + escAttr(team) + '\')">' +
     '<span class="pick-label">✓ PICKED</span>' + escHtml(team) + '</button>';
 }
@@ -357,6 +360,9 @@ function handleLookup() {
           .then(function (r) { return r.json(); })
           .then(function (pd) {
             state.existingPicks = pd.picks || {};
+            Object.keys(state.existingPicks).forEach(function (k) {
+              if (!(k in state.picks)) state.picks[k] = state.existingPicks[k];
+            });
             var openMatches = state.matches.filter(function (m) { return !m.closed; });
             renderMatchCards(openMatches);
             show('submit-area');

@@ -461,3 +461,11 @@ button { cursor: pointer; font-family: inherit; border: none; border-radius: var
   .team-btn { font-size: 1rem; padding: 16px 12px; }
   .calendar-popup { width: 260px; }
 }
+.team-btn.locked:not(.selected) {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.team-btn.locked.selected {
+  opacity: 1;
+  cursor: not-allowed;
+}
