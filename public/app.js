@@ -329,7 +329,9 @@ function renderSuccess(openMatches) {
 }
 
 function updateSubmitBtn(openMatches) {
-  var count = Object.keys(state.picks).length;
+  var count = openMatches.filter(function (m) {
+    return !!state.picks[m.dateTime];
+  }).length;
   var anyPicked = count > 0;
   var btn = document.getElementById('submit-btn');
   btn.disabled = !anyPicked;
