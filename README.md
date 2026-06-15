@@ -1,4 +1,4 @@
-# ĐỘ WC — Plain HTML/CSS/JS for Vercel
+# Mùa đóng quỹ — Plain HTML/CSS/JS for Vercel
 
 No framework, no build step. Drop this folder into Vercel and it works.
 
