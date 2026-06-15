@@ -401,22 +401,27 @@ function handleSubmit() {
   btn.disabled = true; btn.textContent = 'Đang chốt đơn…';
   hide('submit-error');
 
+  var openMatches = state.matches.filter(function (m) { return !m.closed; });
+  var picksToSubmit = {};
+  openMatches.forEach(function (m) {
+    if (state.picks[m.dateTime]) picksToSubmit[m.dateTime] = state.picks[m.dateTime];
+  });
+
   fetch('/api/picks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: state.foundUser.id, picks: state.picks }),
+    body: JSON.stringify({ userId: state.foundUser.id, picks: picksToSubmit }),
   })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       btn.disabled = false;
       btn.textContent = 'Chốt đơn';
-      var openMatches = state.matches.filter(function (m) { return !m.closed; });
       if (data.success) { state.submitted = true; renderMatches(); }
       else { showFieldError('submit-error', data.error || 'Submission failed'); updateSubmitBtn(openMatches); }
     })
     .catch(function () {
       btn.disabled = false; btn.textContent = 'Chốt đơn';
-      showFieldError('Chốt lỗi', 'Đơn chưa chốt, kèo chưa vô, vui lòng thử lại');
+      showFieldError('submit-error', 'Đơn chưa chốt, kèo chưa vô, vui lòng thử lại');
     });
 }
 
