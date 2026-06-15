@@ -123,6 +123,21 @@ async function setMatches(matches) {
   });
 }
 
+async function getUserPicks(userId) {
+  const data = await readBetPickSheet();
+  if (data.length < 2) return {};
+  const header = data[0];
+  const userRow = data.find((r, i) => i > 0 && String(r[2]) === String(userId));
+  if (!userRow) return {};
+  const picks = {};
+  for (let i = 3; i < header.length; i++) {
+    if (header[i] && userRow[i] && userRow[i].trim() && userRow[i].trim() !== '-') {
+      picks[header[i]] = userRow[i].trim();
+    }
+  }
+  return picks;
+}
+
 async function readBetPickSheet() {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
@@ -164,4 +179,5 @@ module.exports = {
   setMatches,
   readBetPickSheet,
   writePick,
+  getUserPicks,
 };

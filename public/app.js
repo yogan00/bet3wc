@@ -13,6 +13,7 @@ var state = {
   submitCutoffMinutes: 180,
   foundUser: null,
   picks: {},
+  existingPicks: {},
   submitted: false,
   adminId: null,
   adminMatches: [],
@@ -192,6 +193,7 @@ function resetToDefault() {
   state.submitted = false;
   state.foundUser = null;
   state.picks = {};
+  state.existingPicks = {};
   closeCalendar();
   updateDateTrigger();
   fetchMatches();
@@ -202,6 +204,7 @@ function switchDay(day) {
   state.submitted = false;
   state.foundUser = null;
   state.picks = {};
+  state.existingPicks = {};
   document.getElementById('user-query').value = '';
   hide('found-user');
   hide('lookup-error');
@@ -285,8 +288,15 @@ function renderMatchCards(openMatches) {
   openMatches.forEach(function (match) {
     var card = document.createElement('div');
     card.className = 'match-card';
+    var existing = state.foundUser ? (state.existingPicks[match.dateTime] || '') : '';
+    var badgeHtml = existing
+      ? '<div class="existing-pick-badge">đã chọn: <strong>' + escHtml(existing) + '</strong></div>'
+      : '';
     card.innerHTML =
-      '<div class="match-time">' + escHtml(match.dateTime) + '</div>' +
+      '<div class="match-card-header">' +
+        '<div class="match-time">' + escHtml(match.dateTime) + '</div>' +
+        badgeHtml +
+      '</div>' +
       handicapLine(match) +
       '<div class="team-grid">' +
         renderTeamBtn(match, match.team1) +
@@ -343,10 +353,22 @@ function handleLookup() {
           '<span class="name">' + escHtml(data.user.name) + '</span>' +
           '<span class="num">#' + data.user.number + '</span>';
         show('found-user');
-        var openMatches = state.matches.filter(function (m) { return !m.closed; });
-        renderMatchCards(openMatches);
-        show('submit-area');
-        updateSubmitBtn(openMatches);
+        fetch('/api/picks?userId=' + encodeURIComponent(data.user.id))
+          .then(function (r) { return r.json(); })
+          .then(function (pd) {
+            state.existingPicks = pd.picks || {};
+            var openMatches = state.matches.filter(function (m) { return !m.closed; });
+            renderMatchCards(openMatches);
+            show('submit-area');
+            updateSubmitBtn(openMatches);
+          })
+          .catch(function () {
+            state.existingPicks = {};
+            var openMatches = state.matches.filter(function (m) { return !m.closed; });
+            renderMatchCards(openMatches);
+            show('submit-area');
+            updateSubmitBtn(openMatches);
+          });
       } else {
         showFieldError('lookup-error', 'Không có tên, vui lòng thử lại');
       }

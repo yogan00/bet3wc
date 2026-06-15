@@ -1,9 +1,20 @@
-const { getMatches, getUsers } = require("./_lib/sheets");
+const { getMatches, getUsers, getUserPicks } = require("./_lib/sheets");
 const { parseMatchDate, isCutoffPassed } = require("./_lib/matches");
 const { submitPick } = require("./_lib/output");
 const config = require("../config");
 
 module.exports = async function handler(req, res) {
+  if (req.method === "GET") {
+    const userId = (req.query.userId || "").trim();
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+    try {
+      const picks = await getUserPicks(userId);
+      return res.json({ picks });
+    } catch (err) {
+      return res.status(500).json({ error: "Server error" });
+    }
+  }
+
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
