@@ -87,15 +87,25 @@ h1 {
   align-items: center;
   gap: 6px;
   margin-top: 12px;
-  font-size: 12px;
-  color: var(--muted);
-  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  background: var(--yellow);
+  border: 1px solid var(--yellow);
   border-radius: 999px;
-  padding: 4px 14px;
+  padding: 6px 16px;
   text-decoration: none;
-  transition: color .15s, border-color .15s;
+  box-shadow: 0 0 0 0 rgba(234,179,8,.5);
+  animation: sheet-link-pulse 2.4s ease-in-out infinite;
+  transition: background .15s, transform .15s;
 }
-.sheet-link:hover { color: var(--yellow); border-color: #713f12; }
+.sheet-link:hover { background: var(--yellow-hover); border-color: var(--yellow-hover); transform: translateY(-1px); }
+
+@keyframes sheet-link-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(234,179,8,.45); }
+  70% { box-shadow: 0 0 0 8px rgba(234,179,8,0); }
+  100% { box-shadow: 0 0 0 0 rgba(234,179,8,0); }
+}
 
 /* ── Date trigger ───────────────────────────────────────────────────────────── */
 .date-trigger-wrap {
