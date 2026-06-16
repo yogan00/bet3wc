@@ -41,9 +41,7 @@ async function computeAndWriteScores() {
   let decidedCount = 0;
   for (const match of decided) {
     if (matchColMap.get(match.dateTime) === undefined) continue;
-    const winner = (match.winner || "").trim();
-    const isValidWinner = winner === (match.team1 || "").trim() || winner === (match.team2 || "").trim();
-    if (isValidWinner) decidedCount++;
+    decidedCount++;
   }
 
   const scores = [];
@@ -60,8 +58,6 @@ async function computeAndWriteScores() {
       const colIdx = matchColMap.get(match.dateTime);
       if (colIdx === undefined) continue;
       const winner = (match.winner || "").trim();
-      const isValidWinner = winner === (match.team1 || "").trim() || winner === (match.team2 || "").trim();
-      if (!isValidWinner) continue;
 
       const pick = (row[colIdx] || "").trim();
 
