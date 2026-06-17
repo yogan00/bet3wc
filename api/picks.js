@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
     // the same dateTime (simultaneous kickoffs) can both be submitted
     // correctly instead of one silently overwriting the other.
     if (!userId || !Array.isArray(picks)) {
-      return res.status(400).json({ error: "Invalid payload" });
+      return res.status(400).json({ error: "Tải lại trang và thử lại" });
     }
 
     const users = await getUsers();
