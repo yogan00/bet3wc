@@ -8,6 +8,9 @@ module.exports = async function handler(req, res) {
     const userId = (req.query.userId || "").trim();
     if (!userId) return res.status(400).json({ error: "Missing userId" });
     try {
+      // getUserPicks now returns an array of { dateTime, occurrence, team }
+      // rather than an object keyed by dateTime, since dateTime alone isn't
+      // unique when matches share a kickoff time.
       const picks = await getUserPicks(userId);
       return res.json({ picks });
     } catch (err) {
@@ -20,7 +23,11 @@ module.exports = async function handler(req, res) {
   try {
     const { userId, picks } = req.body;
 
-    if (!userId || !picks || typeof picks !== "object") {
+    // picks is now an array of { dateTime, occurrence, team } entries
+    // instead of an object keyed by dateTime, so that two matches sharing
+    // the same dateTime (simultaneous kickoffs) can both be submitted
+    // correctly instead of one silently overwriting the other.
+    if (!userId || !Array.isArray(picks)) {
       return res.status(400).json({ error: "Invalid payload" });
     }
 
@@ -29,8 +36,12 @@ module.exports = async function handler(req, res) {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const matches = await getMatches();
-    for (const [matchDateTime, teamPick] of Object.entries(picks)) {
-      const match = matches.find((m) => m.dateTime === matchDateTime);
+    for (const entry of picks) {
+      const matchDateTime = entry && entry.dateTime;
+      const occurrence = (entry && entry.occurrence) || 0;
+      const teamPick = entry && entry.team;
+
+      const match = matches.find((m) => m.dateTime === matchDateTime && (m.occurrence || 0) === occurrence);
       if (!match) return res.status(400).json({ error: `Match "${matchDateTime}" not found` });
       const date = parseMatchDate(matchDateTime);
       if (date && isCutoffPassed(date)) {
@@ -43,8 +54,8 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    for (const [matchDateTime, teamPick] of Object.entries(picks)) {
-      await submitPick(String(userId), matchDateTime, teamPick);
+    for (const entry of picks) {
+      await submitPick(String(userId), entry.dateTime, entry.occurrence || 0, entry.team);
     }
 
     res.json({ success: true });
