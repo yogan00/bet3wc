@@ -127,6 +127,30 @@
         <div>
           <span class="admin-badge">Admin</span>
           <h1>Manage Matches</h1>
+
+          <!-- Admin date picker trigger -->
+          <div id="admin-date-trigger-wrap" style="display:none" class="date-trigger-wrap">
+            <button id="admin-date-trigger-btn" class="date-trigger-btn" onclick="toggleAdminCalendar()">
+              <span>📅</span>
+              <span id="admin-date-trigger-label" class="date-trigger-label"></span>
+              <span id="admin-date-trigger-arrow" class="date-trigger-arrow">▼</span>
+            </button>
+            <!-- Calendar popup -->
+            <div id="admin-calendar-popup" class="calendar-popup" style="display:none">
+              <div class="cal-header">
+                <button class="cal-nav" onclick="adminCalPrevMonth()">‹</button>
+                <span id="admin-cal-month-label" class="cal-month-label"></span>
+                <button class="cal-nav" onclick="adminCalNextMonth()">›</button>
+              </div>
+              <div class="cal-dow-row">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div id="admin-cal-grid" class="cal-grid"></div>
+              <div class="cal-footer">
+                <button class="cal-today-btn" onclick="resetAdminToDefault()">Sắp diễn ra</button>
+              </div>
+            </div>
+          </div>
         </div>
         <button class="link-btn" onclick="closeAdmin()">← Về lại trang chủ</button>
       </div>
