@@ -1,13 +1,23 @@
-const { getMatches, getUsers, readBetPickSheet, writePick, writeUserScores, colorBetPickSheet } = require("./sheets");
+const {
+  getMatches,
+  getUsers,
+  readBetPickSheet,
+  writePick,
+  writeUserScores,
+  colorBetPickSheet,
+  buildHeaderColumnIndex,
+  matchColumnKey,
+} = require("./sheets");
 const { TYPE_POINTS, DEFAULT_POINTS } = require("./config");
 
-async function submitPick(userId, matchDateTime, teamPick) {
+async function submitPick(userId, matchDateTime, occurrence, teamPick) {
   const data = await readBetPickSheet();
   if (data.length === 0) throw new Error("Bet pick sheet is empty");
 
   const header = data[0];
-  const matchColIdx = header.findIndex((h, i) => i >= 3 && h === matchDateTime);
-  if (matchColIdx === -1)
+  const headerIndex = buildHeaderColumnIndex(header);
+  const matchColIdx = headerIndex.get(matchColumnKey(matchDateTime, occurrence));
+  if (matchColIdx === undefined)
     throw new Error(`Match "${matchDateTime}" not found in Bet pick sheet`);
 
   let userRowIdx = -1;
@@ -34,14 +44,11 @@ async function computeAndWriteScores() {
   if (decided.length === 0 || betPickData.length < 2) return;
 
   const header = betPickData[0];
-  const matchColMap = new Map();
-  for (let i = 3; i < header.length; i++) {
-    if (header[i]) matchColMap.set(header[i], i);
-  }
+  const headerIndex = buildHeaderColumnIndex(header);
 
   let decidedCount = 0;
   for (const match of decided) {
-    if (matchColMap.get(match.dateTime) === undefined) continue;
+    if (headerIndex.get(matchColumnKey(match.dateTime, match.occurrence)) === undefined) continue;
     decidedCount++;
   }
 
@@ -56,7 +63,7 @@ async function computeAndWriteScores() {
     let winCount = 0;
     let voteCount = 0;
     for (const match of decided) {
-      const colIdx = matchColMap.get(match.dateTime);
+      const colIdx = headerIndex.get(matchColumnKey(match.dateTime, match.occurrence));
       if (colIdx === undefined) continue;
       const winner = (match.winner || "").trim();
 
