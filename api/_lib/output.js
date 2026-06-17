@@ -1,4 +1,4 @@
-const { getMatches, readBetPickSheet, writePick, writeUserScores } = require("./sheets");
+const { getMatches, getUsers, readBetPickSheet, writePick, writeUserScores, colorBetPickSheet } = require("./sheets");
 const { TYPE_POINTS, DEFAULT_POINTS } = require("./config");
 
 async function submitPick(userId, matchDateTime, teamPick) {
@@ -24,9 +24,10 @@ async function submitPick(userId, matchDateTime, teamPick) {
 }
 
 async function computeAndWriteScores() {
-  const [matches, betPickData] = await Promise.all([
+  const [matches, betPickData, users] = await Promise.all([
     getMatches(),
     readBetPickSheet(),
+    getUsers(),
   ]);
 
   const decided = matches.filter((m) => m.winner && m.winner.trim() !== "");
@@ -77,6 +78,9 @@ async function computeAndWriteScores() {
   }
 
   await writeUserScores(scores);
+
+  const validUserIds = users.map((u) => u.id);
+  await colorBetPickSheet(matches, betPickData, validUserIds);
 }
 
 module.exports = { submitPick, computeAndWriteScores };
