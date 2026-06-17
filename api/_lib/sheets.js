@@ -78,6 +78,13 @@ async function writeUserScores(scores) {
   });
 }
 
+// Reads the "Lịch" sheet into match objects. When two or more matches kick
+// off at the exact same dateTime (common in group-stage rounds), the
+// "dateTime" string alone can't tell them apart. So each match also gets an
+// `occurrence` number: 0 for the first match with that dateTime (in column
+// order), 1 for the second, and so on. Everything downstream that needs to
+// uniquely identify a match (picks, scoring, coloring) uses the pair
+// (dateTime, occurrence) instead of dateTime alone.
 async function getMatches() {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
@@ -95,18 +102,23 @@ async function getMatches() {
   const handicapRow = rows[5] || [];
 
   const matches = [];
+  const occurrenceSeen = new Map(); // dateTime -> count of matches seen so far
   for (let i = 1; i < dtRow.length; i++) {
     const dateTime = dtRow[i];
     const team1    = t1Row[i];
     const team2    = t2Row[i];
     if (dateTime && team1 && team2) {
+      const dtStr = String(dateTime);
+      const occurrence = occurrenceSeen.get(dtStr) || 0;
+      occurrenceSeen.set(dtStr, occurrence + 1);
       matches.push({
-        dateTime: String(dateTime),
+        dateTime: dtStr,
         team1:    String(team1),
         team2:    String(team2),
         winner:   wRow[i]        ? String(wRow[i])        : undefined,
         type:     typeRow[i]     ? String(typeRow[i])     : undefined,
         handicap: handicapRow[i] ? String(handicapRow[i]).replace(',', '.') : undefined,
+        occurrence,
       });
     }
   }
@@ -134,16 +146,47 @@ async function setMatches(matches) {
   });
 }
 
+// Builds a lookup of "dateTime|occurrence" -> column index for a "Chọn đội"
+// style header row (columns 0-2 are s/Name/Id, match columns start at 3).
+// When the same dateTime text repeats across several columns (simultaneous
+// matches), each repetition is assigned the next occurrence number in
+// left-to-right order — mirroring exactly how getMatches() numbers
+// same-dateTime matches in "Lịch". As long as the relative left-to-right
+// order of same-time matches is consistent between the two sheets (which it
+// is in this spreadsheet), this correctly tells simultaneous matches apart
+// without requiring any change to either sheet's headers.
+function buildHeaderColumnIndex(header) {
+  const map = new Map();
+  const seen = new Map();
+  for (let i = 3; i < header.length; i++) {
+    const label = header[i];
+    if (!label) continue;
+    const occurrence = seen.get(label) || 0;
+    seen.set(label, occurrence + 1);
+    map.set(matchColumnKey(label, occurrence), i);
+  }
+  return map;
+}
+
+function matchColumnKey(dateTime, occurrence) {
+  return `${dateTime}|${occurrence || 0}`;
+}
+
 async function getUserPicks(userId) {
   const data = await readBetPickSheet();
-  if (data.length < 2) return {};
+  if (data.length < 2) return [];
   const header = data[0];
   const userRow = data.find((r, i) => i > 0 && String(r[2]) === String(userId));
-  if (!userRow) return {};
-  const picks = {};
+  if (!userRow) return [];
+  const seen = new Map();
+  const picks = [];
   for (let i = 3; i < header.length; i++) {
-    if (header[i] && userRow[i] && userRow[i].trim() && userRow[i].trim() !== '-') {
-      picks[header[i]] = userRow[i].trim();
+    if (!header[i]) continue;
+    const occurrence = seen.get(header[i]) || 0;
+    seen.set(header[i], occurrence + 1);
+    const val = (userRow[i] || "").trim();
+    if (val && val !== "-") {
+      picks.push({ dateTime: header[i], occurrence, team: val });
     }
   }
   return picks;
@@ -195,15 +238,19 @@ async function getSheetGid(spreadsheetId, sheetTitle) {
 //   - pick is blank/missing                        -> light yellow
 //   - match has no winner yet (not decided)         -> no fill (reset)
 // Only rows belonging to a known user (validUserIds) are touched; unknown
-// rows are left completely alone.
+// rows are left completely alone. Columns are matched to matches by
+// (dateTime, occurrence) so simultaneous matches are colored independently.
 async function colorBetPickSheet(matches, betPickData, validUserIds) {
   if (betPickData.length < 2) return;
 
   const header = betPickData[0];
-  const matchColMap = new Map(); // dateTime -> { colIdx, winner }
+  const matchColMap = new Map(); // colIdx -> match (or null)
+  const seen = new Map();
   for (let i = 3; i < header.length; i++) {
     if (!header[i]) continue;
-    const match = matches.find((m) => m.dateTime === header[i]);
+    const occurrence = seen.get(header[i]) || 0;
+    seen.set(header[i], occurrence + 1);
+    const match = matches.find((m) => m.dateTime === header[i] && (m.occurrence || 0) === occurrence);
     matchColMap.set(i, match || null);
   }
   if (matchColMap.size === 0) return;
@@ -283,4 +330,6 @@ module.exports = {
   writePick,
   getUserPicks,
   colorBetPickSheet,
+  buildHeaderColumnIndex,
+  matchColumnKey,
 };
