@@ -11,12 +11,18 @@ var state = {
   calMonth: new Date().getMonth() + 1,
   sheetUrl: null,
   submitCutoffMinutes: 180,
+  matchLookaheadHours: 36,
   foundUser: null,
   picks: {},
   existingPicks: {},
   submitted: false,
   adminId: null,
   adminMatches: [],
+  adminAllDays: [],
+  adminSelectedDay: null,
+  adminCalendarOpen: false,
+  adminCalYear: new Date().getFullYear(),
+  adminCalMonth: new Date().getMonth() + 1,
 };
 
 var MONTH_NAMES = ['January','February','March','April','May','June',
@@ -33,13 +39,21 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.key === 'Enter') handleAdminLogin();
   });
 
-  // Close calendar on outside click
+  // Close calendar(s) on outside click
   document.addEventListener('mousedown', function (e) {
-    if (!state.calendarOpen) return;
-    var popup = document.getElementById('calendar-popup');
-    var btn = document.getElementById('date-trigger-btn');
-    if (popup && !popup.contains(e.target) && btn && !btn.contains(e.target)) {
-      closeCalendar();
+    if (state.calendarOpen) {
+      var popup = document.getElementById('calendar-popup');
+      var btn = document.getElementById('date-trigger-btn');
+      if (popup && !popup.contains(e.target) && btn && !btn.contains(e.target)) {
+        closeCalendar();
+      }
+    }
+    if (state.adminCalendarOpen) {
+      var adminPopup = document.getElementById('admin-calendar-popup');
+      var adminBtn = document.getElementById('admin-date-trigger-btn');
+      if (adminPopup && !adminPopup.contains(e.target) && adminBtn && !adminBtn.contains(e.target)) {
+        closeAdminCalendar();
+      }
     }
   });
 });
@@ -80,6 +94,9 @@ function fetchDaysAndConfig() {
     if (typeof configData.submitCutoffMinutes === 'number') {
       state.submitCutoffMinutes = configData.submitCutoffMinutes;
     }
+    if (typeof configData.matchLookaheadHours === 'number') {
+      state.matchLookaheadHours = configData.matchLookaheadHours;
+    }
     updateCutoffDesc();
 
     updateDateTrigger();
@@ -91,7 +108,7 @@ function fetchDaysAndConfig() {
   });
 }
 
-// ── Date trigger ──────────────────────────────────────────────────────────────
+// ── Date trigger (user view) ───────────────────────────────────────────────────
 function updateDateTrigger() {
   show('date-trigger-wrap');
   if (state.selectedDay) {
@@ -445,7 +462,13 @@ function handleAdminLogin() {
 }
 
 function openAdmin() { hide('main-view'); show('admin-view'); show('scroll-end-btn'); show('scroll-top-btn'); loadAdminMatches(); }
-function closeAdmin() { show('main-view'); hide('admin-view'); hide('scroll-end-btn'); hide('scroll-top-btn'); state.adminId = null; document.getElementById('admin-input').value = ''; }
+function closeAdmin() {
+  show('main-view'); hide('admin-view'); hide('scroll-end-btn'); hide('scroll-top-btn');
+  closeAdminCalendar();
+  state.adminId = null;
+  state.adminSelectedDay = null;
+  document.getElementById('admin-input').value = '';
+}
 
 function loadAdminMatches() {
   show('admin-loading'); hide('admin-content');
@@ -455,15 +478,148 @@ function loadAdminMatches() {
       hide('admin-loading');
       if (data.error) { showAdminMsg('error', data.error); return; }
       state.adminMatches = data.matches || [];
+      state.adminSelectedDay = null;
+      computeAdminAllDays();
+      updateAdminDateTrigger();
       renderAdminMatches(); show('admin-content');
     })
     .catch(function () { hide('admin-loading'); showAdminMsg('error', 'Failed to load matches.'); });
 }
 
-function renderAdminMatches() {
-  var container = document.getElementById('admin-matches');
-  container.innerHTML = '';
-  state.adminMatches.forEach(function (match, idx) { container.appendChild(buildAdminMatchCard(match, idx)); });
+// ── Admin day filtering ──────────────────────────────────────────────────────
+// Admin sees the same "pick a day" UI as the user view, but the default
+// ("Sắp diễn ra") window is wider: MATCH_LOOKAHEAD_HOURS *before* now through
+// MATCH_LOOKAHEAD_HOURS *after* now (e.g. 36h -> a 72h window), instead of
+// the user's "now through +lookahead" window. This makes it easy for admins
+// to find recently-played matches (to set winners) as well as upcoming ones,
+// without having to scroll through every match ever scheduled.
+
+function computeAdminAllDays() {
+  var seen = {};
+  state.adminMatches.forEach(function (m) {
+    var d = parseAdminDate(m.dateTime);
+    if (!d) return;
+    seen[adminDateKey(d)] = true;
+  });
+  state.adminAllDays = Object.keys(seen).sort();
+}
+
+function adminDateKey(d) {
+  return toKey(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
+function isInAdminDefaultWindow(d) {
+  var hours = typeof state.matchLookaheadHours === 'number' ? state.matchLookaheadHours : 36;
+  var ms = hours * 60 * 60 * 1000;
+  var now = Date.now();
+  return d.getTime() >= (now - ms) && d.getTime() <= (now + ms);
+}
+
+// Returns the visible subset of state.adminMatches, each tagged with its
+// original index (origIdx) so edits/removes still map back correctly.
+function getVisibleAdminMatches() {
+  return state.adminMatches
+    .map(function (m, origIdx) { return { match: m, origIdx: origIdx }; })
+    .filter(function (entry) {
+      var d = parseAdminDate(entry.match.dateTime);
+      if (!d) return true; // new/blank rows always visible
+      if (state.adminSelectedDay) return adminDateKey(d) === state.adminSelectedDay;
+      return isInAdminDefaultWindow(d);
+    });
+}
+
+function updateAdminDateTrigger() {
+  show('admin-date-trigger-wrap');
+  if (state.adminSelectedDay) {
+    setText('admin-date-trigger-label', formatDayLabel(state.adminSelectedDay));
+  } else {
+    setText('admin-date-trigger-label', 'Sắp diễn ra');
+  }
+}
+
+function toggleAdminCalendar() {
+  if (state.adminCalendarOpen) { closeAdminCalendar(); } else { openAdminCalendar(); }
+}
+
+function openAdminCalendar() {
+  var refDay = state.adminSelectedDay || adminDateKey(new Date());
+  var parts = refDay.split('-');
+  state.adminCalYear = Number(parts[0]);
+  state.adminCalMonth = Number(parts[1]);
+  state.adminCalendarOpen = true;
+  renderAdminCalendar();
+  show('admin-calendar-popup');
+  setText('admin-date-trigger-arrow', '▲');
+}
+
+function closeAdminCalendar() {
+  state.adminCalendarOpen = false;
+  hide('admin-calendar-popup');
+  setText('admin-date-trigger-arrow', '▼');
+}
+
+function adminCalPrevMonth() {
+  if (state.adminCalMonth === 1) { state.adminCalYear--; state.adminCalMonth = 12; }
+  else { state.adminCalMonth--; }
+  renderAdminCalendar();
+}
+
+function adminCalNextMonth() {
+  if (state.adminCalMonth === 12) { state.adminCalYear++; state.adminCalMonth = 1; }
+  else { state.adminCalMonth++; }
+  renderAdminCalendar();
+}
+
+function renderAdminCalendar() {
+  var y = state.adminCalYear;
+  var m = state.adminCalMonth;
+  setText('admin-cal-month-label', MONTH_NAMES[m - 1] + ' ' + y);
+
+  var daysInMonth = new Date(y, m, 0).getDate();
+  var startDow = new Date(y, m - 1, 1).getDay();
+  var activeDay = state.adminSelectedDay;
+
+  var grid = document.getElementById('admin-cal-grid');
+  grid.innerHTML = '';
+
+  for (var blank = 0; blank < startDow; blank++) {
+    var emptyCell = document.createElement('div');
+    grid.appendChild(emptyCell);
+  }
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var key = toKey(y, m, d);
+    var hasMatch = state.adminAllDays.indexOf(key) !== -1;
+    var isSelected = key === activeDay;
+
+    var cell = document.createElement('button');
+    cell.textContent = String(d);
+    cell.className = 'cal-day' +
+      (isSelected ? ' cal-selected' : hasMatch ? ' cal-has-match' : ' cal-no-match');
+    cell.disabled = !hasMatch;
+
+    if (hasMatch) {
+      (function (k) {
+        cell.onclick = function () { switchAdminDay(k); };
+      })(key);
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+function switchAdminDay(day) {
+  state.adminSelectedDay = day;
+  closeAdminCalendar();
+  updateAdminDateTrigger();
+  renderAdminMatches();
+}
+
+function resetAdminToDefault() {
+  state.adminSelectedDay = null;
+  closeAdminCalendar();
+  updateAdminDateTrigger();
+  renderAdminMatches();
 }
 
 var TYPE_OPTIONS = [
@@ -506,7 +662,27 @@ function isAdminMatchPast(match) {
   return hasWinner && timeOver;
 }
 
-function buildAdminMatchCard(match, idx) {
+function renderAdminMatches() {
+  var container = document.getElementById('admin-matches');
+  container.innerHTML = '';
+  var visible = getVisibleAdminMatches();
+
+  if (visible.length === 0) {
+    var empty = document.createElement('p');
+    empty.className = 'muted small center-text mt-sm';
+    empty.textContent = state.adminSelectedDay
+      ? 'Không có lịch đá ngày này.'
+      : 'Không có lịch đá trong khoảng thời gian này.';
+    container.appendChild(empty);
+    return;
+  }
+
+  visible.forEach(function (entry, displayIdx) {
+    container.appendChild(buildAdminMatchCard(entry.match, entry.origIdx, displayIdx + 1));
+  });
+}
+
+function buildAdminMatchCard(match, idx, displayNumber) {
   var card = document.createElement('div');
   var past = isAdminMatchPast(match);
   card.className = 'admin-match-card' + (past ? ' admin-match-card--past' : '');
@@ -514,7 +690,7 @@ function buildAdminMatchCard(match, idx) {
   var hasWinner = match.winner && match.winner.trim();
   var lockedAttr = past ? ' disabled' : '';
   card.innerHTML =
-    '<div class="admin-match-header"><span class="admin-match-label">Match ' + (idx + 1) + (past ? ' <span class="past-badge">PAST</span>' : '') + '</span>' +
+    '<div class="admin-match-header"><span class="admin-match-label">Match ' + displayNumber + (past ? ' <span class="past-badge">PAST</span>' : '') + '</span>' +
     '<button class="remove-btn" onclick="removeMatch(' + idx + ')">Remove</button></div>' +
     '<div class="two-col">' +
     '<input type="text" placeholder="Date &amp; Time (e.g. 12/06/2026 2am)" value="' + escAttr(match.dateTime) + '" oninput="updateMatch(' + idx + ', \'dateTime\', this.value)"' + lockedAttr + ' />' +
@@ -537,8 +713,18 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function addMatch() { state.adminMatches.push({ dateTime: '', team1: '', team2: '', winner: '', type: '', handicap: '' }); renderAdminMatches(); }
-function removeMatch(idx) { state.adminMatches.splice(idx, 1); renderAdminMatches(); }
+function addMatch() {
+  state.adminMatches.push({ dateTime: '', team1: '', team2: '', winner: '', type: '', handicap: '' });
+  // A brand-new blank match has no parseable date, so it's always visible
+  // regardless of the current day filter — no need to reset the filter.
+  renderAdminMatches();
+}
+
+function removeMatch(idx) {
+  state.adminMatches.splice(idx, 1);
+  computeAdminAllDays();
+  renderAdminMatches();
+}
 
 function updateMatch(idx, field, value) {
   state.adminMatches[idx][field] = value;
@@ -552,11 +738,16 @@ function updateMatch(idx, field, value) {
       } else { if (badge) badge.remove(); }
     }
   }
+  if (field === 'dateTime') {
+    computeAdminAllDays();
+  }
 }
 
 function handleSave() {
   var btn = document.getElementById('save-btn');
   btn.disabled = true; btn.textContent = 'Đang lưu…'; clearAdminMsgs();
+  // Always save the FULL match list (not just the currently visible day),
+  // since the day filter is purely a display concern.
   var cleaned = state.adminMatches.filter(function (m) { return m.dateTime.trim() && m.team1.trim() && m.team2.trim(); });
   fetch('/api/admin/matches', {
     method: 'PUT',
@@ -566,7 +757,12 @@ function handleSave() {
     .then(function (r) { return r.json(); })
     .then(function (data) {
       btn.disabled = false; btn.textContent = 'Lưu lịch thi đấu';
-      if (data.success) { state.adminMatches = cleaned; renderAdminMatches(); showAdminMsg('success', 'Match schedule saved!'); }
+      if (data.success) {
+        state.adminMatches = cleaned;
+        computeAdminAllDays();
+        renderAdminMatches();
+        showAdminMsg('success', 'Match schedule saved!');
+      }
       else showAdminMsg('error', data.error || 'Save failed');
     })
     .catch(function () { btn.disabled = false; btn.textContent = 'Lưu lịch thi đấu'; showAdminMsg('error', 'Save failed.'); });
