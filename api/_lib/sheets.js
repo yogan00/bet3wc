@@ -8,6 +8,17 @@ const {
   OUTPUT_SHEET,
 } = require("./config");
 
+// Light fill colors used to highlight picks in the "Chọn đội" sheet after
+// scores are recalculated. Values are RGB floats in the 0–1 range, per the
+// Sheets API's Color spec.
+const COLOR_WIN = { red: 0.80, green: 0.94, blue: 0.80 };   // light green
+const COLOR_LOSS = { red: 0.98, green: 0.80, blue: 0.80 };  // light red
+const COLOR_BLANK = { red: 1.00, green: 0.95, blue: 0.70 }; // light yellow
+// The Sheets API has no real "unset" for backgroundColor — sending {} is
+// interpreted as RGB defaults (0,0,0 = black), not "no fill". To reset a
+// cell we must explicitly send white.
+const COLOR_NONE = { red: 1, green: 1, blue: 1 }; // reset to white
+
 function getAuth() {
   if (!GOOGLE_SERVICE_ACCOUNT_JSON)
     throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is not set");
@@ -161,6 +172,97 @@ async function writePick(rowIdx, colIdx, value) {
   });
 }
 
+// Looks up the numeric sheetId (gid) for a tab name within a spreadsheet.
+// Needed because cell-formatting requests (batchUpdate with repeatCell)
+// address sheets by gid, not by name.
+async function getSheetGid(spreadsheetId, sheetTitle) {
+  const sheets = getSheetsClient();
+  const res = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets.properties",
+  });
+  const found = (res.data.sheets || []).find(
+    (s) => s.properties && s.properties.title === sheetTitle
+  );
+  if (!found) throw new Error(`Sheet tab "${sheetTitle}" not found`);
+  return found.properties.sheetId;
+}
+
+// Colors each user's pick cell in the "Chọn đội" sheet based on the outcome
+// of the corresponding match:
+//   - pick matches the winner (case-insensitive)  -> light green
+//   - pick exists but doesn't match the winner     -> light red
+//   - pick is blank/missing                        -> light yellow
+//   - match has no winner yet (not decided)         -> no fill (reset)
+// Only rows belonging to a known user (validUserIds) are touched; unknown
+// rows are left completely alone.
+async function colorBetPickSheet(matches, betPickData, validUserIds) {
+  if (betPickData.length < 2) return;
+
+  const header = betPickData[0];
+  const matchColMap = new Map(); // dateTime -> { colIdx, winner }
+  for (let i = 3; i < header.length; i++) {
+    if (!header[i]) continue;
+    const match = matches.find((m) => m.dateTime === header[i]);
+    matchColMap.set(i, match || null);
+  }
+  if (matchColMap.size === 0) return;
+
+  const validIds = new Set(Array.from(validUserIds).map((id) => String(id)));
+  const sheetId = await getSheetGid(OUTPUT_SHEET_ID, OUTPUT_SHEET);
+
+  const requests = [];
+  for (let rowIdx = 1; rowIdx < betPickData.length; rowIdx++) {
+    const row = betPickData[rowIdx];
+    const userId = row[2];
+    if (!userId || !validIds.has(String(userId))) continue;
+
+    for (const [colIdx, match] of matchColMap) {
+      const winner = match && match.winner ? match.winner.trim() : "";
+      const pick = (row[colIdx] || "").trim();
+
+      let color;
+      if (!winner) {
+        color = COLOR_NONE;
+      } else if (!pick || pick === "-") {
+        color = COLOR_BLANK;
+      } else if (pick.toLowerCase() === winner.toLowerCase()) {
+        color = COLOR_WIN;
+      } else {
+        color = COLOR_LOSS;
+      }
+
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId,
+            startRowIndex: rowIdx,
+            endRowIndex: rowIdx + 1,
+            startColumnIndex: colIdx,
+            endColumnIndex: colIdx + 1,
+          },
+          cell: {
+            userEnteredFormat: { backgroundColor: color },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+    }
+  }
+
+  if (requests.length === 0) return;
+
+  const sheets = getSheetsClient();
+  const BATCH_SIZE = 500; // keep individual batchUpdate payloads reasonable
+  for (let i = 0; i < requests.length; i += BATCH_SIZE) {
+    const chunk = requests.slice(i, i + BATCH_SIZE);
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: OUTPUT_SHEET_ID,
+      requestBody: { requests: chunk },
+    });
+  }
+}
+
 function colIndexToLetter(idx) {
   let col = "";
   let n = idx + 1;
@@ -180,4 +282,5 @@ module.exports = {
   readBetPickSheet,
   writePick,
   getUserPicks,
+  colorBetPickSheet,
 };
