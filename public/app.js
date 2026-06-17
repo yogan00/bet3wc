@@ -28,6 +28,19 @@ var state = {
 var MONTH_NAMES = ['January','February','March','April','May','June',
   'July','August','September','October','November','December'];
 
+// ── Match identity ─────────────────────────────────────────────────────────
+// Two or more matches can share the exact same dateTime (simultaneous
+// kickoffs). `occurrence` (0, 1, 2…) tells them apart — it's assigned by the
+// API in column order, the same way for every match with that dateTime.
+// Anywhere we need a unique key for a match (to store/look up a pick), use
+// buildMatchKey/matchKey instead of match.dateTime alone.
+function buildMatchKey(dateTime, occurrence) {
+  return dateTime + '__' + (occurrence || 0);
+}
+function matchKey(match) {
+  return buildMatchKey(match.dateTime, match.occurrence);
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
   fetchDaysAndConfig();
@@ -305,7 +318,8 @@ function renderMatchCards(openMatches) {
   openMatches.forEach(function (match) {
     var card = document.createElement('div');
     card.className = 'match-card';
-    var existing = state.foundUser ? (state.existingPicks[match.dateTime] || '') : '';
+    var key = matchKey(match);
+    var existing = state.foundUser ? (state.existingPicks[key] || '') : '';
     var badgeHtml = existing
       ? '<div class="existing-pick-badge">đã chọn: <strong>' + escHtml(existing) + '</strong></div>'
       : '';
@@ -325,14 +339,15 @@ function renderMatchCards(openMatches) {
 }
 
 function renderTeamBtn(match, team) {
-  var selected = state.picks[match.dateTime] === team;
-  var existingPick = state.existingPicks[match.dateTime];
+  var key = matchKey(match);
+  var selected = state.picks[key] === team;
+  var existingPick = state.existingPicks[key];
   var locked = !!existingPick;
   var disabled = (!state.foundUser || locked) ? 'disabled' : '';
   var selClass = selected ? ' selected' : '';
   var lockedClass = locked ? ' locked' : '';
   return '<button class="team-btn' + selClass + lockedClass + '" ' + disabled +
-    ' onclick="handlePickTeam(\'' + escAttr(match.dateTime) + '\', \'' + escAttr(team) + '\')">' +
+    ' onclick="handlePickTeam(\'' + escAttr(match.dateTime) + '\', ' + (match.occurrence || 0) + ', \'' + escAttr(team) + '\')">' +
     '<span class="pick-label">✓ PICKED</span>' + escHtml(team) + '</button>';
 }
 
@@ -340,14 +355,14 @@ function renderSuccess(openMatches) {
   show('success-box');
   setText('success-name', state.foundUser ? state.foundUser.name : '');
   var picksHtml = openMatches.map(function (m) {
-    return '<div class="success-pick">' + escHtml(m.dateTime) + ': <span>' + escHtml(state.picks[m.dateTime] || '') + '</span></div>';
+    return '<div class="success-pick">' + escHtml(m.dateTime) + ': <span>' + escHtml(state.picks[matchKey(m)] || '') + '</span></div>';
   }).join('');
   document.getElementById('success-picks').innerHTML = '<div class="success-picks">' + picksHtml + '</div>';
 }
 
 function updateSubmitBtn(openMatches) {
   var count = openMatches.filter(function (m) {
-    return !!state.picks[m.dateTime];
+    return !!state.picks[matchKey(m)];
   }).length;
   var anyPicked = count > 0;
   var btn = document.getElementById('submit-btn');
@@ -378,7 +393,14 @@ function handleLookup() {
         fetch('/api/picks?userId=' + encodeURIComponent(data.user.id))
           .then(function (r) { return r.json(); })
           .then(function (pd) {
-            state.existingPicks = pd.picks || {};
+            // pd.picks is an array of { dateTime, occurrence, team } —
+            // build a lookup keyed the same way as state.picks/existingPicks.
+            var picksArr = pd.picks || [];
+            var existing = {};
+            picksArr.forEach(function (p) {
+              existing[buildMatchKey(p.dateTime, p.occurrence)] = p.team;
+            });
+            state.existingPicks = existing;
             Object.keys(state.existingPicks).forEach(function (k) {
               if (!(k in state.picks)) state.picks[k] = state.existingPicks[k];
             });
@@ -404,9 +426,9 @@ function handleLookup() {
     });
 }
 
-function handlePickTeam(matchDateTime, team) {
+function handlePickTeam(matchDateTime, occurrence, team) {
   if (!state.foundUser) return;
-  state.picks[matchDateTime] = team;
+  state.picks[buildMatchKey(matchDateTime, occurrence)] = team;
   var openMatches = state.matches.filter(function (m) { return !m.closed; });
   renderMatchCards(openMatches);
   updateSubmitBtn(openMatches);
@@ -419,9 +441,12 @@ function handleSubmit() {
   hide('submit-error');
 
   var openMatches = state.matches.filter(function (m) { return !m.closed; });
-  var picksToSubmit = {};
+  // picksToSubmit is now a list of { dateTime, occurrence, team } so the
+  // server can tell apart matches that share the same dateTime.
+  var picksToSubmit = [];
   openMatches.forEach(function (m) {
-    if (state.picks[m.dateTime]) picksToSubmit[m.dateTime] = state.picks[m.dateTime];
+    var pick = state.picks[matchKey(m)];
+    if (pick) picksToSubmit.push({ dateTime: m.dateTime, occurrence: m.occurrence || 0, team: pick });
   });
 
   fetch('/api/picks', {
