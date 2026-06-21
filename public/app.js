@@ -799,11 +799,11 @@ function handleRecalculate() {
   fetch('/api/admin/score', { method: 'POST', headers: { 'x-admin-id': state.adminId } })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      btn.disabled = false; btn.textContent = '🏆 Tính tiền';
-      if (data.success) showAdminMsg('success', 'Đã tính tiền!');
-      else showAdminMsg('error', data.error || 'Tính tiền lỗi, liên hệ Tuấn mập');
+      btn.disabled = false; btn.textContent = '🏆 Tính điểm';
+      if (data.success) showAdminMsg('success', 'Đã tính điểm!');
+      else showAdminMsg('error', data.error || 'Tính điểm lỗi, liên hệ Tuấn mập');
     })
-    .catch(function () { btn.disabled = false; btn.textContent = '🏆 Tính tiền'; showAdminMsg('error', 'Failed.'); });
+    .catch(function () { btn.disabled = false; btn.textContent = '🏆 Tính điểm'; showAdminMsg('error', 'Failed.'); });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
